@@ -7,7 +7,8 @@
 #include "include/raylib.h"
 #include "include/raygui.h"
 
-#define MAX_POINTS  11      
+#define MAX_SHAPES 12
+#define MAX_POINTS  12     
 
 //----------------------------------------------------------------------------------
 // Controls Functions Declaration
@@ -18,6 +19,32 @@ static void EncodeButton();
 static void DecodeButton();
 static void LabelButton007();
 
+typedef struct Shape
+{
+    Vector2 points[MAX_POINTS];
+    int numPoints;
+    Color color;
+} Shape;
+
+typedef struct Vitmap
+{
+    Shape shapes[MAX_SHAPES];
+    int numShapes;
+} Vitmap;
+
+void initVitmap(Vitmap *vitmap)
+{
+    vitmap->numShapes = 0;
+    for (int i = 0; i < MAX_SHAPES; i++)
+    {
+        vitmap->shapes[i].numPoints = 0;
+        for (int j = 0; j < MAX_POINTS; j++)
+        {
+            vitmap->shapes[i].points[j] = (Vector2){ 0, 0 };
+        }
+    }
+}
+
 //------------------------------------------------------------------------------------
 // Program main entry point
 //------------------------------------------------------------------------------------
@@ -26,27 +53,8 @@ int main()
     // Initialization
     //---------------------------------------------------------------------------------------
 
-	Vector2 coords[MAX_POINTS] = {
-			(Vector2){ 0.75f, 0.0f },
-			(Vector2){ 0.25f, 0.0f },
-			(Vector2){ 0.0f, 0.5f },
-			(Vector2){ 0.0f, 0.75f },
-			(Vector2){ 0.25f, 1.0f},
-			(Vector2){ 0.375f, 0.875f},
-			(Vector2){ 0.625f, 0.875f},
-			(Vector2){ 0.75f, 1.0f},
-			(Vector2){ 1.0f, 0.75f},
-			(Vector2){ 1.0f, 0.5f},
-			(Vector2){ 0.75f, 0.0f}  // Close the poly
-		};
-
-		Vector2 points[MAX_POINTS] = { 0 };
-    for (int i = 0; i < MAX_POINTS; i++)
-    {
-        points[i].x = (coords[i].x - 0.5f)*256.0f;
-        points[i].y = (coords[i].y - 0.5f)*256.0f;
-    }
-    
+    Vitmap vitmap;
+    initVitmap(&vitmap);
 
     int screenWidth = 1280;
     int screenHeight = 720;
@@ -78,9 +86,30 @@ int main()
 
             ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR))); 
 
-			// Draw polygons
+            Shape* currentShape = &vitmap.shapes[vitmap.numShapes];
+            currentShape->points[currentShape->numPoints] = GetMousePosition();
+			if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && currentShape->numPoints < MAX_POINTS - 1)
+            {    
+                currentShape->numPoints++;
+                printf("%d %d %d %d\n", ColorPickerValue.r, ColorPickerValue.g, ColorPickerValue.b, ColorPickerValue.a);
+            }
+            if (IsKeyPressed(KEY_BACKSPACE) && currentShape->numPoints > 0)
+            {
+                currentShape->numPoints--;
+            }
+            if (IsKeyPressed(KEY_ENTER) && vitmap.numShapes < MAX_SHAPES - 1)
+            {
+                vitmap.numShapes++;
+            }
+            currentShape->color = (Color){ ColorPickerValue.r, ColorPickerValue.g, ColorPickerValue.b, 200 };
 
-			DrawTriangleStrip(points, MAX_POINTS, BLACK);
+            for (int i = 0; i < vitmap.numShapes + 1; i++)
+            {
+                Shape* shape = &vitmap.shapes[i];
+                DrawTriangleStrip(shape->points, shape->numPoints + 1, shape->color);
+            }
+			//DrawTriangleStrip(currentShape->points, currentShape->numPoints + 1, ColorPickerValue);
+            DrawText(TextFormat("pts: %d", currentShape->numPoints), 24, 456, 20, BLACK);
 
             // raygui: controls drawing
             //----------------------------------------------------------------------------------
