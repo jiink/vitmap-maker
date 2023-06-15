@@ -8,7 +8,7 @@
 #include "include/raygui.h"
 
 #define MAX_SHAPES 12
-#define MAX_POINTS  12     
+#define MAX_POINTS 12
 
 //----------------------------------------------------------------------------------
 // Controls Functions Declaration
@@ -19,30 +19,50 @@ static void EncodeButton();
 static void DecodeButton();
 static void LabelButton007();
 
+// Shapes are closed polygons
 typedef struct Shape
 {
-    Vector2 points[MAX_POINTS];
-    int numPoints;
-    Color color;
+	Vector2 points[MAX_POINTS];
+	int numPoints;
+	Color color;
 } Shape;
 
 typedef struct Vitmap
 {
-    Shape shapes[MAX_SHAPES];
-    int numShapes;
+	Shape shapes[MAX_SHAPES];
+	int numShapes;
 } Vitmap;
 
 void initVitmap(Vitmap *vitmap)
 {
-    vitmap->numShapes = 0;
-    for (int i = 0; i < MAX_SHAPES; i++)
-    {
-        vitmap->shapes[i].numPoints = 0;
-        for (int j = 0; j < MAX_POINTS; j++)
-        {
-            vitmap->shapes[i].points[j] = (Vector2){ 0, 0 };
-        }
-    }
+	vitmap->numShapes = 0;
+	for (int i = 0; i < MAX_SHAPES; i++)
+	{
+		vitmap->shapes[i].numPoints = 0;
+		for (int j = 0; j < MAX_POINTS; j++)
+		{
+			vitmap->shapes[i].points[j] = (Vector2){0, 0};
+		}
+	}
+}
+
+void drawShape(Shape *shape)
+{
+	// For now just draw a line between every point and connect the last to the first
+	for (int i = 0; i < shape->numPoints; i++)
+	{
+		DrawLineV(shape->points[i], shape->points[i + 1], shape->color);
+	}
+	DrawLineV(shape->points[shape->numPoints], shape->points[0], shape->color);
+}
+
+void drawVitmap(Vitmap *vitmap)
+{
+	for (int i = 0; i < vitmap->numShapes + 1; i++)
+	{
+		Shape *shape = &vitmap->shapes[i];
+		drawShape(shape);
+	}
 }
 
 //------------------------------------------------------------------------------------
@@ -50,94 +70,93 @@ void initVitmap(Vitmap *vitmap)
 //------------------------------------------------------------------------------------
 int main()
 {
-    // Initialization
-    //---------------------------------------------------------------------------------------
+	// Initialization
+	//---------------------------------------------------------------------------------------
 
-    Vitmap vitmap;
-    initVitmap(&vitmap);
+	Vitmap vitmap;
+	initVitmap(&vitmap);
 
-    int screenWidth = 1280;
-    int screenHeight = 720;
+	int screenWidth = 1280;
+	int screenHeight = 720;
 
-    InitWindow(screenWidth, screenHeight, "vitmapMaker");
+	InitWindow(screenWidth, screenHeight, "vitmapMaker");
 
-    // vitmapMaker: controls initialization
-    //----------------------------------------------------------------------------------
-    bool TextmultiBox005EditMode = false;
-    char TextmultiBox005Text[128] = "SAMPLE TEXT";
-    int modeToggleGroupActive = 0;
-    Color ColorPickerValue = { 0, 0, 0, 0 };
-    //----------------------------------------------------------------------------------
+	// vitmapMaker: controls initialization
+	//----------------------------------------------------------------------------------
+	bool TextmultiBox005EditMode = false;
+	char TextmultiBox005Text[128] = "SAMPLE TEXT";
+	int modeToggleGroupActive = 0;
+	Color ColorPickerValue = {0, 0, 0, 0};
+	//----------------------------------------------------------------------------------
 
-    SetTargetFPS(60);
-    //--------------------------------------------------------------------------------------
+	SetTargetFPS(60);
+	//--------------------------------------------------------------------------------------
 
-    // Main game loop
-    while (!WindowShouldClose())    // Detect window close button or ESC key
-    {
-        // Update
-        //----------------------------------------------------------------------------------
-        // TODO: Implement required update logic
-        //----------------------------------------------------------------------------------
+	// Main game loop
+	while (!WindowShouldClose()) // Detect window close button or ESC key
+	{
+		// Update
+		//----------------------------------------------------------------------------------
+		// TODO: Implement required update logic
+		//----------------------------------------------------------------------------------
+		Shape *currentShape = &vitmap.shapes[vitmap.numShapes];
+		currentShape->points[currentShape->numPoints] = GetMousePosition();
+		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && currentShape->numPoints < MAX_POINTS - 1)
+		{
+			currentShape->numPoints++;
+			printf("%d %d %d %d\n", ColorPickerValue.r, ColorPickerValue.g, ColorPickerValue.b, ColorPickerValue.a);
+		}
+		if (IsKeyPressed(KEY_BACKSPACE) && currentShape->numPoints > 0)
+		{
+			currentShape->numPoints--;
+		}
+		if (IsKeyPressed(KEY_ENTER) && vitmap.numShapes < MAX_SHAPES - 1)
+		{
+			vitmap.numShapes++;
+		}
+		currentShape->color = (Color){ColorPickerValue.r, ColorPickerValue.g, ColorPickerValue.b, 255};
 
-        // Draw
-        //----------------------------------------------------------------------------------
-        BeginDrawing();
+		// Draw
+		//----------------------------------------------------------------------------------
+		BeginDrawing();
 
-            ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR))); 
+		ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
 
-			rlDisableBackfaceCulling();
+		// rlDisableBackfaceCulling();
+		drawVitmap(&vitmap);
+		// rlEnableBackfaceCulling();
 
-            Shape* currentShape = &vitmap.shapes[vitmap.numShapes];
-            currentShape->points[currentShape->numPoints] = GetMousePosition();
-			if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && currentShape->numPoints < MAX_POINTS - 1)
-            {    
-                currentShape->numPoints++;
-                printf("%d %d %d %d\n", ColorPickerValue.r, ColorPickerValue.g, ColorPickerValue.b, ColorPickerValue.a);
-            }
-            if (IsKeyPressed(KEY_BACKSPACE) && currentShape->numPoints > 0)
-            {
-                currentShape->numPoints--;
-            }
-            if (IsKeyPressed(KEY_ENTER) && vitmap.numShapes < MAX_SHAPES - 1)
-            {
-                vitmap.numShapes++;
-            }
-            currentShape->color = (Color){ ColorPickerValue.r, ColorPickerValue.g, ColorPickerValue.b, 255 };
+		DrawText(TextFormat("pts: %d", currentShape->numPoints), 24, 456, 20, BLACK);
 
-            for (int i = 0; i < vitmap.numShapes + 1; i++)
-            {
-                Shape* shape = &vitmap.shapes[i];
-                DrawTriangleStrip(shape->points, shape->numPoints + 1, shape->color);
-            }
-			
-			//rlEnableBackfaceCulling();
-			
-            DrawText(TextFormat("pts: %d", currentShape->numPoints), 24, 456, 20, BLACK);		
+		// raygui: controls drawing
+		//----------------------------------------------------------------------------------
+		if (GuiButton((Rectangle){24, 24, 120, 24}, "Save..."))
+			SaveButton();
+		if (GuiButton((Rectangle){168, 24, 120, 24}, "Load..."))
+			LoadButton();
+		if (GuiButton((Rectangle){24, 408, 120, 24}, "Encode"))
+			EncodeButton();
+		if (GuiButton((Rectangle){168, 408, 120, 24}, "Decode"))
+			DecodeButton();
+		if (GuiTextBox((Rectangle){24, 456, 336, 192}, TextmultiBox005Text, 128, TextmultiBox005EditMode))
+			TextmultiBox005EditMode = !TextmultiBox005EditMode;
+		modeToggleGroupActive = GuiToggleGroup((Rectangle){240, 120, 40, 24}, "VIEW;DRAW", modeToggleGroupActive);
+		if (GuiLabelButton((Rectangle){240, 96, 120, 24}, "Modes"))
+			LabelButton007();
+		GuiGroupBox((Rectangle){408, 24, 624, 624}, "Vitmap View");
+		ColorPickerValue = GuiColorPicker((Rectangle){240, 176, 96, 96}, NULL, ColorPickerValue);
+		//----------------------------------------------------------------------------------
 
-            // raygui: controls drawing
-            //----------------------------------------------------------------------------------
-            if (GuiButton((Rectangle){ 24, 24, 120, 24 }, "Save...")) SaveButton(); 
-            if (GuiButton((Rectangle){ 168, 24, 120, 24 }, "Load...")) LoadButton(); 
-            if (GuiButton((Rectangle){ 24, 408, 120, 24 }, "Encode")) EncodeButton(); 
-            if (GuiButton((Rectangle){ 168, 408, 120, 24 }, "Decode")) DecodeButton(); 
-            if (GuiTextBox((Rectangle){ 24, 456, 336, 192 }, TextmultiBox005Text, 128, TextmultiBox005EditMode)) TextmultiBox005EditMode = !TextmultiBox005EditMode;
-            modeToggleGroupActive = GuiToggleGroup((Rectangle){ 240, 120, 40, 24 }, "VIEW;DRAW", modeToggleGroupActive);
-            if (GuiLabelButton((Rectangle){ 240, 96, 120, 24 }, "Modes")) LabelButton007(); 
-            GuiGroupBox((Rectangle){ 408, 24, 624, 624 }, "Vitmap View");
-            ColorPickerValue = GuiColorPicker((Rectangle){ 240, 176, 96, 96 }, NULL, ColorPickerValue);
-            //----------------------------------------------------------------------------------
+		EndDrawing();
+		//----------------------------------------------------------------------------------
+	}
 
-        EndDrawing();
-        //----------------------------------------------------------------------------------
-    }
+	// De-Initialization
+	//--------------------------------------------------------------------------------------
+	CloseWindow(); // Close window and OpenGL context
+	//--------------------------------------------------------------------------------------
 
-    // De-Initialization
-    //--------------------------------------------------------------------------------------
-    CloseWindow();        // Close window and OpenGL context
-    //--------------------------------------------------------------------------------------
-
-    return 0;
+	return 0;
 }
 
 //------------------------------------------------------------------------------------
@@ -145,22 +164,21 @@ int main()
 //------------------------------------------------------------------------------------
 static void SaveButton()
 {
-    // TODO: Implement control logic
+	// TODO: Implement control logic
 }
 static void LoadButton()
 {
-    // TODO: Implement control logic
+	// TODO: Implement control logic
 }
 static void EncodeButton()
 {
-    // TODO: Implement control logic
+	// TODO: Implement control logic
 }
 static void DecodeButton()
 {
-    // TODO: Implement control logic
+	// TODO: Implement control logic
 }
 static void LabelButton007()
 {
-    // TODO: Implement control logic
+	// TODO: Implement control logic
 }
-
