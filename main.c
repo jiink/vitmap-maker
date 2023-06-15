@@ -103,7 +103,7 @@ int main()
             {
                 vitmap.numShapes++;
             }
-            currentShape->color = (Color){ ColorPickerValue.r, ColorPickerValue.g, ColorPickerValue.b, 200 };
+            currentShape->color = (Color){ ColorPickerValue.r, ColorPickerValue.g, ColorPickerValue.b, 255 };
 
             for (int i = 0; i < vitmap.numShapes + 1; i++)
             {
@@ -111,7 +111,7 @@ int main()
                 DrawTriangleStrip(shape->points, shape->numPoints + 1, shape->color);
             }
 			
-			rlEnableBackfaceCulling();
+			//rlEnableBackfaceCulling();
 			
             DrawText(TextFormat("pts: %d", currentShape->numPoints), 24, 456, 20, BLACK);		
 
