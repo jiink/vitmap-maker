@@ -86,6 +86,8 @@ int main()
 
             ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR))); 
 
+			rlDisableBackfaceCulling();
+
             Shape* currentShape = &vitmap.shapes[vitmap.numShapes];
             currentShape->points[currentShape->numPoints] = GetMousePosition();
 			if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && currentShape->numPoints < MAX_POINTS - 1)
@@ -108,8 +110,10 @@ int main()
                 Shape* shape = &vitmap.shapes[i];
                 DrawTriangleStrip(shape->points, shape->numPoints + 1, shape->color);
             }
-			//DrawTriangleStrip(currentShape->points, currentShape->numPoints + 1, ColorPickerValue);
-            DrawText(TextFormat("pts: %d", currentShape->numPoints), 24, 456, 20, BLACK);
+			
+			rlEnableBackfaceCulling();
+			
+            DrawText(TextFormat("pts: %d", currentShape->numPoints), 24, 456, 20, BLACK);		
 
             // raygui: controls drawing
             //----------------------------------------------------------------------------------
