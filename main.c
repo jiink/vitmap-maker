@@ -26,6 +26,7 @@ typedef struct Shape
 	Vector2 points[MAX_POINTS];
 	int numPoints;
 	Color color;
+	// TESStesselator* tesselator;
 } Shape;
 
 typedef struct Vitmap
@@ -43,7 +44,39 @@ void initVitmap(Vitmap *vitmap)
 		for (int j = 0; j < MAX_POINTS; j++)
 		{
 			vitmap->shapes[i].points[j] = (Vector2){0, 0};
+			vitmap->shapes[i].color = (Color){0, 0, 0, 0};
+			// vitmap->shapes[i].tesselator = tessNewTess(NULL);
+			// tessSetOption(vitmap->shapes[i].tesselator, TESS_CONSTRAINED_DELAUNAY_TRIANGULATION, 1);
 		}
+	}
+}
+
+void drawTesselation(TESStesselator* tesselator, Color color)
+{
+	int vertexCount = tessGetVertexCount(tesselator);
+	const TESSreal *vertices = tessGetVertices(tesselator);
+	// Print out vertices
+	//printf("vertices:\n");
+	// for (int i = 0; i < vertexCount; i++)
+	// {
+	// 	printf("%f %f\n", vertices[i * 2], vertices[i * 2 + 1]);
+	// }
+	int indexCount = tessGetElementCount(tesselator) * 3;
+	const TESSindex *indices = tessGetElements(tesselator);
+	// Print out indices
+	// printf("indices:\n");
+	// for (int i = 0; i < indexCount; i++)
+	// {
+	// 	printf("%d\n", indices[i]);
+	// }
+	// Draw tesselator
+	for (int i = 0; i < indexCount; i += 3)
+	{
+		DrawTriangle(
+			(Vector2){vertices[indices[i] * 2], vertices[indices[i] * 2 + 1]},
+			(Vector2){vertices[indices[i + 1] * 2], vertices[indices[i + 1] * 2 + 1]},
+			(Vector2){vertices[indices[i + 2] * 2], vertices[indices[i + 2] * 2 + 1]},
+			color);
 	}
 }
 
@@ -52,6 +85,16 @@ void drawShape(Shape *shape)
 	// For now just draw a line between every point and connect the last to the first
 	DrawLineStrip(shape->points, shape->numPoints + 1, shape->color);
 	DrawLineV(shape->points[shape->numPoints], shape->points[0], shape->color);
+
+	TESStesselator *tesselator = tessNewTess(NULL);
+	tessSetOption(tesselator, TESS_CONSTRAINED_DELAUNAY_TRIANGULATION, 1);
+	tessAddContour(tesselator, 2, shape->points, sizeof(Vector2), shape->numPoints + 1);
+	tessTesselate(tesselator, TESS_WINDING_ODD, TESS_POLYGONS, 3, 2, NULL);
+	drawTesselation(tesselator, shape->color);
+	tessDeleteTess(tesselator);
+
+	// drawTesselation(shape->tesselator, shape->color);
+	// printf("shape->tesselator: %d\n", tessGetVertexCount(shape->tesselator));
 }
 
 void drawVitmap(Vitmap *vitmap)
@@ -70,9 +113,43 @@ int main()
 {
 	// Initialization
 	//---------------------------------------------------------------------------------------
+
+	Vector2 tesselTestPoints[4] =
+	{
+		{0, 0},
+		{0, 100},
+		{100, 100},
+		{100, 0}
+	};
+	Vector2 tesselTestPoints2[4] =
+	{
+		{0 + 100, 0},
+		{0 + 100, 100},
+		{100 + 100, 100},
+		{100 + 100, 0}
+	};
 	TESStesselator *tesselator = tessNewTess(NULL);
 	tessSetOption(tesselator, TESS_CONSTRAINED_DELAUNAY_TRIANGULATION, 1);
-	
+	tessAddContour(tesselator, 2, tesselTestPoints, sizeof(Vector2), 4);
+	tessAddContour(tesselator, 2, tesselTestPoints2, sizeof(Vector2), 4);
+	tessTesselate(tesselator, TESS_WINDING_ODD, TESS_POLYGONS, 3, 2, NULL);
+	int vertexCount = tessGetVertexCount(tesselator);
+	const TESSreal *vertices = tessGetVertices(tesselator);
+	// Print out vertices
+	printf("vertices:\n");
+	for (int i = 0; i < vertexCount; i++)
+	{
+		printf("%f %f\n", vertices[i * 2], vertices[i * 2 + 1]);
+	}
+	int indexCount = tessGetElementCount(tesselator) * 3;
+	const TESSindex *indices = tessGetElements(tesselator);
+	// Print out indices
+	printf("indices:\n");
+	for (int i = 0; i < indexCount; i++)
+	{
+		printf("%d\n", indices[i]);
+	}
+
 	Vitmap vitmap;
 	initVitmap(&vitmap);
 
@@ -104,6 +181,8 @@ int main()
 		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && currentShape->numPoints < MAX_POINTS - 1)
 		{
 			currentShape->numPoints++;
+			// tessAddContour(currentShape->tesselator, 2, &currentShape->points[currentShape->numPoints], sizeof(Vector2), 1);
+			// tessTesselate(currentShape->tesselator, TESS_WINDING_ODD, TESS_POLYGONS, 3, 2, NULL);
 			printf("%d %d %d %d\n", ColorPickerValue.r, ColorPickerValue.g, ColorPickerValue.b, ColorPickerValue.a);
 		}
 		if (IsKeyPressed(KEY_BACKSPACE) && currentShape->numPoints > 0)
@@ -122,7 +201,10 @@ int main()
 
 		ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
 
-		// rlDisableBackfaceCulling();
+		drawTesselation(tesselator, GREEN);
+
+
+		rlDisableBackfaceCulling();
 		drawVitmap(&vitmap);
 		// rlEnableBackfaceCulling();
 
