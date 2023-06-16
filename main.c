@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include "include/raylib.h"
 #include "include/raygui.h"
+#include "include/tesselator.h"
 
 #define MAX_SHAPES 12
 #define MAX_POINTS 12
@@ -49,10 +50,7 @@ void initVitmap(Vitmap *vitmap)
 void drawShape(Shape *shape)
 {
 	// For now just draw a line between every point and connect the last to the first
-	for (int i = 0; i < shape->numPoints; i++)
-	{
-		DrawLineV(shape->points[i], shape->points[i + 1], shape->color);
-	}
+	DrawLineStrip(shape->points, shape->numPoints + 1, shape->color);
 	DrawLineV(shape->points[shape->numPoints], shape->points[0], shape->color);
 }
 
@@ -72,7 +70,9 @@ int main()
 {
 	// Initialization
 	//---------------------------------------------------------------------------------------
-
+	TESStesselator *tesselator = tessNewTess(NULL);
+	tessSetOption(tesselator, TESS_CONSTRAINED_DELAUNAY_TRIANGULATION, 1);
+	
 	Vitmap vitmap;
 	initVitmap(&vitmap);
 
