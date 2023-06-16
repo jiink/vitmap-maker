@@ -80,26 +80,52 @@ void drawTesselation(TESStesselator* tesselator, Color color)
 	}
 }
 
-void drawShape(Shape *shape)
+void drawShape(Shape *shape, Vector2 position, Vector2 scale)
 {
-	// For now just draw a line between every point and connect the last to the first
-	DrawLineStrip(shape->points, shape->numPoints + 1, shape->color);
-	DrawLineV(shape->points[shape->numPoints], shape->points[0], shape->color);
+	Vector2* points = &shape->points;
+	Vector2 transformedPoints[MAX_POINTS];
+	int numPoints = shape->numPoints;
+	Color color = shape->color;
+	// todo: figure out this +1 stuff
+	for (int i = 0; i < numPoints + 1; i++)
+	{
+		transformedPoints[i].x = position.x + points[i].x * scale.x;
+		transformedPoints[i].y = position.y + points[i].y * scale.y;
+	}
+	
+	DrawLineStrip(transformedPoints, numPoints + 1, color);
+	DrawLineV(transformedPoints[numPoints], transformedPoints[0], color);
 
 	TESStesselator *tesselator = tessNewTess(NULL);
 	tessSetOption(tesselator, TESS_CONSTRAINED_DELAUNAY_TRIANGULATION, 1);
-	tessAddContour(tesselator, 2, shape->points, sizeof(Vector2), shape->numPoints + 1);
+	tessAddContour(tesselator, 2, transformedPoints, sizeof(Vector2), numPoints + 1);
 	tessTesselate(tesselator, TESS_WINDING_ODD, TESS_POLYGONS, 3, 2, NULL);
-	drawTesselation(tesselator, shape->color);
+	drawTesselation(tesselator, color);
 	tessDeleteTess(tesselator);
 }
 
-void drawVitmap(Vitmap *vitmap)
+void drawVitmap(Vitmap *vitmap, Vector2 position, Vector2 scale)
 {
 	for (int i = 0; i < vitmap->numShapes + 1; i++)
 	{
 		Shape *shape = &vitmap->shapes[i];
-		drawShape(shape);
+		drawShape(shape, position, scale);
+	}
+}
+
+float clamp(float value, float min, float max)
+{
+	if (value < min)
+	{
+		return min;
+	}
+	else if (value > max)
+	{
+		return max;
+	}
+	else
+	{
+		return value;
 	}
 }
 
@@ -111,7 +137,7 @@ int main()
 	// Initialization
 	//---------------------------------------------------------------------------------------
 
-	Vector2 gridSize = {32, 32};
+	Vector2 gridSize = {8, 8};
 	Rectangle drawingArea = {424, 40, 592, 592};
 	
 	Vitmap vitmap;
@@ -141,8 +167,25 @@ int main()
 		//----------------------------------------------------------------------------------
 		// TODO: Implement required update logic
 		//----------------------------------------------------------------------------------
+
+		// Get mouse coords in drawingArea coords
+		Vector2 mouseDrawAreaPos = 
+		{
+			(GetMousePosition().x - drawingArea.x) / (drawingArea.width / gridSize.x),
+			(GetMousePosition().y - drawingArea.y) / (drawingArea.height / gridSize.y),
+		};
+		// Must stay between 0 and gridSize
+		mouseDrawAreaPos.x = clamp(mouseDrawAreaPos.x, 0, gridSize.x);
+		mouseDrawAreaPos.y = clamp(mouseDrawAreaPos.y, 0, gridSize.y);
+		Vector2 mouseSnappedPos = 
+		{
+			roundf(mouseDrawAreaPos.x),
+			roundf(mouseDrawAreaPos.y)
+		};
+
+
 		Shape *currentShape = &vitmap.shapes[vitmap.numShapes];
-		currentShape->points[currentShape->numPoints] = GetMousePosition();
+		currentShape->points[currentShape->numPoints] = mouseSnappedPos;
 		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && currentShape->numPoints < MAX_POINTS - 1)
 		{
 			currentShape->numPoints++;
@@ -155,6 +198,10 @@ int main()
 		{
 			vitmap.numShapes++;
 		}
+		if (IsKeyPressed(KEY_DELETE) && vitmap.numShapes > 0)
+		{
+			vitmap.numShapes--;
+		}
 		currentShape->color = (Color){ColorPickerValue.r, ColorPickerValue.g, ColorPickerValue.b, 255};
 
 		// Draw
@@ -164,13 +211,21 @@ int main()
 		ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
 
 		DrawRectangleRec(drawingArea, GetColor(GuiGetStyle(DEFAULT, LINE_COLOR)));
-
+		// draw grid dots (gridSize has how many dots to draw in each direction)
+		for (int i = 0; i < gridSize.x; i++)
+		{
+			for (int j = 0; j < gridSize.y; j++)
+			{
+				DrawRectangle(drawingArea.x + drawingArea.width / gridSize.x * i, drawingArea.y + drawingArea.height / gridSize.y * j, 3, 3, BLACK);
+			}
+		}
 
 		rlDisableBackfaceCulling();
-		drawVitmap(&vitmap);
+		drawVitmap(&vitmap, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
 		// rlEnableBackfaceCulling();
 
 		DrawText(TextFormat("pts: %d", currentShape->numPoints), 24, 456, 20, BLACK);
+		DrawText(TextFormat("mouse draw area pos: %f, %f", mouseDrawAreaPos.x, mouseDrawAreaPos.y), 24, 480, 20, BLACK);
 
 		// raygui: controls drawing
 		//----------------------------------------------------------------------------------
