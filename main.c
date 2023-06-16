@@ -92,9 +92,6 @@ void drawShape(Shape *shape)
 	tessTesselate(tesselator, TESS_WINDING_ODD, TESS_POLYGONS, 3, 2, NULL);
 	drawTesselation(tesselator, shape->color);
 	tessDeleteTess(tesselator);
-
-	// drawTesselation(shape->tesselator, shape->color);
-	// printf("shape->tesselator: %d\n", tessGetVertexCount(shape->tesselator));
 }
 
 void drawVitmap(Vitmap *vitmap)
@@ -114,42 +111,9 @@ int main()
 	// Initialization
 	//---------------------------------------------------------------------------------------
 
-	Vector2 tesselTestPoints[4] =
-	{
-		{0, 0},
-		{0, 100},
-		{100, 100},
-		{100, 0}
-	};
-	Vector2 tesselTestPoints2[4] =
-	{
-		{0 + 100, 0},
-		{0 + 100, 100},
-		{100 + 100, 100},
-		{100 + 100, 0}
-	};
-	TESStesselator *tesselator = tessNewTess(NULL);
-	tessSetOption(tesselator, TESS_CONSTRAINED_DELAUNAY_TRIANGULATION, 1);
-	tessAddContour(tesselator, 2, tesselTestPoints, sizeof(Vector2), 4);
-	tessAddContour(tesselator, 2, tesselTestPoints2, sizeof(Vector2), 4);
-	tessTesselate(tesselator, TESS_WINDING_ODD, TESS_POLYGONS, 3, 2, NULL);
-	int vertexCount = tessGetVertexCount(tesselator);
-	const TESSreal *vertices = tessGetVertices(tesselator);
-	// Print out vertices
-	printf("vertices:\n");
-	for (int i = 0; i < vertexCount; i++)
-	{
-		printf("%f %f\n", vertices[i * 2], vertices[i * 2 + 1]);
-	}
-	int indexCount = tessGetElementCount(tesselator) * 3;
-	const TESSindex *indices = tessGetElements(tesselator);
-	// Print out indices
-	printf("indices:\n");
-	for (int i = 0; i < indexCount; i++)
-	{
-		printf("%d\n", indices[i]);
-	}
-
+	Vector2 gridSize = {32, 32};
+	Rectangle drawingArea = {424, 40, 592, 592};
+	
 	Vitmap vitmap;
 	initVitmap(&vitmap);
 
@@ -168,6 +132,7 @@ int main()
 
 	SetTargetFPS(60);
 	//--------------------------------------------------------------------------------------
+	GuiLoadStyle("lavanda.rgs");
 
 	// Main game loop
 	while (!WindowShouldClose()) // Detect window close button or ESC key
@@ -181,9 +146,6 @@ int main()
 		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && currentShape->numPoints < MAX_POINTS - 1)
 		{
 			currentShape->numPoints++;
-			// tessAddContour(currentShape->tesselator, 2, &currentShape->points[currentShape->numPoints], sizeof(Vector2), 1);
-			// tessTesselate(currentShape->tesselator, TESS_WINDING_ODD, TESS_POLYGONS, 3, 2, NULL);
-			printf("%d %d %d %d\n", ColorPickerValue.r, ColorPickerValue.g, ColorPickerValue.b, ColorPickerValue.a);
 		}
 		if (IsKeyPressed(KEY_BACKSPACE) && currentShape->numPoints > 0)
 		{
@@ -201,7 +163,7 @@ int main()
 
 		ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
 
-		drawTesselation(tesselator, GREEN);
+		DrawRectangleRec(drawingArea, GetColor(GuiGetStyle(DEFAULT, LINE_COLOR)));
 
 
 		rlDisableBackfaceCulling();
@@ -225,7 +187,7 @@ int main()
 		modeToggleGroupActive = GuiToggleGroup((Rectangle){240, 120, 40, 24}, "VIEW;DRAW", modeToggleGroupActive);
 		if (GuiLabelButton((Rectangle){240, 96, 120, 24}, "Modes"))
 			LabelButton007();
-		GuiGroupBox((Rectangle){408, 24, 624, 624}, "Vitmap View");
+		GuiGroupBox((Rectangle){drawingArea.x - 16, drawingArea.y - 16, drawingArea.width + 32, drawingArea.height + 32}, "Vitmap View");
 		ColorPickerValue = GuiColorPicker((Rectangle){240, 176, 96, 96}, NULL, ColorPickerValue);
 		//----------------------------------------------------------------------------------
 
