@@ -8,8 +8,8 @@
 #include "include/raygui.h"
 #include "include/tesselator.h"
 
-#define MAX_SHAPES 12
-#define MAX_POINTS 12
+#define MAX_SHAPES 24
+#define MAX_POINTS 24
 
 //----------------------------------------------------------------------------------
 // Controls Functions Declaration
@@ -26,7 +26,6 @@ typedef struct Shape
 	Vector2 points[MAX_POINTS];
 	int numPoints;
 	Color color;
-	// TESStesselator* tesselator;
 } Shape;
 
 typedef struct Vitmap
@@ -45,8 +44,6 @@ void initVitmap(Vitmap *vitmap)
 		{
 			vitmap->shapes[i].points[j] = (Vector2){0, 0};
 			vitmap->shapes[i].color = (Color){0, 0, 0, 0};
-			// vitmap->shapes[i].tesselator = tessNewTess(NULL);
-			// tessSetOption(vitmap->shapes[i].tesselator, TESS_CONSTRAINED_DELAUNAY_TRIANGULATION, 1);
 		}
 	}
 }
@@ -82,7 +79,7 @@ void drawTesselation(TESStesselator* tesselator, Color color)
 
 void drawShape(Shape *shape, Vector2 position, Vector2 scale)
 {
-	Vector2* points = &shape->points;
+	Vector2* points = (Vector2*)&shape->points;
 	Vector2 transformedPoints[MAX_POINTS];
 	int numPoints = shape->numPoints;
 	Color color = shape->color;
@@ -137,7 +134,7 @@ int main()
 	// Initialization
 	//---------------------------------------------------------------------------------------
 
-	Vector2 gridSize = {8, 8};
+	Vector2 gridSize = {16, 16};
 	Rectangle drawingArea = {424, 40, 592, 592};
 	
 	Vitmap vitmap;
