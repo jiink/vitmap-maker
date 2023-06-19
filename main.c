@@ -84,7 +84,7 @@ void drawShape(Shape *shape, Vector2 position, Vector2 scale)
 	int numPoints = shape->numPoints;
 	Color color = shape->color;
 	// todo: figure out this +1 stuff
-	for (int i = 0; i < numPoints + 1; i++)
+	for (int i = 0; i <= numPoints; i++)
 	{
 		transformedPoints[i].x = position.x + points[i].x * scale.x;
 		transformedPoints[i].y = position.y + points[i].y * scale.y;
@@ -126,6 +126,11 @@ float clamp(float value, float min, float max)
 	}
 }
 
+float lerp(float a, float b, float t)
+{
+	return a + (b - a) * t;
+}
+
 //------------------------------------------------------------------------------------
 // Program main entry point
 //------------------------------------------------------------------------------------
@@ -143,7 +148,20 @@ int main()
 	int screenWidth = 1280;
 	int screenHeight = 720;
 
+	Vector2 lastMouseDrawAreaPos = {0.0, 0.0};
+
+
 	InitWindow(screenWidth, screenHeight, "vitmapMaker");
+
+	InitAudioDevice();
+
+	SetMasterVolume(10.0);
+	Sound clickSound = LoadSound("assets/click.wav");
+	Sound pressSound = LoadSound("assets/press.wav");
+	Sound snapSound = LoadSound("assets/snap.wav");
+	Sound slidingSound = LoadSound("assets/sliding.wav");
+
+	float realVol = 0.0;
 
 	// vitmapMaker: controls initialization
 	//----------------------------------------------------------------------------------
@@ -151,11 +169,17 @@ int main()
 	char TextmultiBox005Text[128] = "SAMPLE TEXT";
 	int modeToggleGroupActive = 0;
 	Color ColorPickerValue = {0, 0, 0, 0};
+	Color BgGridColor = {50, 50, 50, 255};
+	float resolution = 2.0;
+
 	//----------------------------------------------------------------------------------
 
 	SetTargetFPS(60);
 	//--------------------------------------------------------------------------------------
 	GuiLoadStyle("lavanda.rgs");
+
+	PlaySound(slidingSound);
+
 
 	// Main game loop
 	while (!WindowShouldClose()) // Detect window close button or ESC key
@@ -180,12 +204,44 @@ int main()
 			roundf(mouseDrawAreaPos.y)
 		};
 
+		bool isMouseInRect = CheckCollisionPointRec(GetMousePosition(), drawingArea);
+
+
+		// VOLUME CONTROL FOR SLIIDEE!!!	---------------------------
+		float mouse_dist = (fabs(mouseDrawAreaPos.x - lastMouseDrawAreaPos.x) + fabs(mouseDrawAreaPos.y - lastMouseDrawAreaPos.y));
+		float targetVol = 1.0 * mouse_dist;
+
+		if (!isMouseInRect)
+		{
+			targetVol = 0.0;
+		}
+		realVol = clamp(
+			lerp(realVol, targetVol, 0.4),
+			0.0,
+			1.0
+		);
+		SetSoundVolume(
+			slidingSound,
+			realVol
+		);
+		// ------------------------------------------------------------
 
 		Shape *currentShape = &vitmap.shapes[vitmap.numShapes];
-		currentShape->points[currentShape->numPoints] = mouseSnappedPos;
-		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && currentShape->numPoints < MAX_POINTS - 1)
+		
+
+		if (isMouseInRect)
+		{
+			currentShape->points[currentShape->numPoints] = mouseSnappedPos;
+		}
+		else if (currentShape->numPoints > 1)
+		{
+			currentShape->points[currentShape->numPoints] = currentShape->points[currentShape->numPoints - 1];
+		}
+
+		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && currentShape->numPoints < MAX_POINTS - 1 && isMouseInRect)
 		{
 			currentShape->numPoints++;
+			PlaySound(pressSound);
 		}
 		if (IsKeyPressed(KEY_BACKSPACE) && currentShape->numPoints > 0)
 		{
@@ -194,6 +250,7 @@ int main()
 		if (IsKeyPressed(KEY_ENTER) && vitmap.numShapes < MAX_SHAPES - 1)
 		{
 			vitmap.numShapes++;
+			PlaySound(snapSound);
 		}
 		if (IsKeyPressed(KEY_DELETE) && vitmap.numShapes > 0)
 		{
@@ -201,20 +258,36 @@ int main()
 		}
 		currentShape->color = (Color){ColorPickerValue.r, ColorPickerValue.g, ColorPickerValue.b, 255};
 
+
+		// Loop sliding sound
+		if (!IsSoundPlaying(slidingSound)) PlaySound(slidingSound);
+
+
 		// Draw
 		//----------------------------------------------------------------------------------
 		BeginDrawing();
 
 		ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
 
-		DrawRectangleRec(drawingArea, GetColor(GuiGetStyle(DEFAULT, LINE_COLOR)));
-		// draw grid dots (gridSize has how many dots to draw in each direction)
+		DrawRectangleRec(drawingArea, BgGridColor);
+		// draw grid dots AND checkerboard (gridSize has how many dots to draw in each direction)
 		for (int i = 0; i < gridSize.x; i++)
 		{
 			for (int j = 0; j < gridSize.y; j++)
 			{
+				// Checkerboard on every other juicy tile
+				if ((i - j) % 2 == 0)
+				{
+					DrawRectangle(
+						drawingArea.x + drawingArea.width / gridSize.x * i,
+						drawingArea.y + drawingArea.height / gridSize.y * j,
+						drawingArea.width / gridSize.x,
+						drawingArea.height / gridSize.y,
+						(Color){BgGridColor.r + 10, BgGridColor.g + 10, BgGridColor.b + 10, 255} //Find a better way to do this😨
+					);
+				}
 				DrawRectangle(drawingArea.x + drawingArea.width / gridSize.x * i, drawingArea.y + drawingArea.height / gridSize.y * j, 3, 3, BLACK);
-			}
+			}	
 		}
 
 		rlDisableBackfaceCulling();
@@ -227,28 +300,63 @@ int main()
 		// raygui: controls drawing
 		//----------------------------------------------------------------------------------
 		if (GuiButton((Rectangle){24, 24, 120, 24}, "Save..."))
+		{
 			SaveButton();
+			PlaySound(clickSound);
+		}
 		if (GuiButton((Rectangle){168, 24, 120, 24}, "Load..."))
+		{
 			LoadButton();
+			PlaySound(clickSound);
+		}
 		if (GuiButton((Rectangle){24, 408, 120, 24}, "Encode"))
+		{
 			EncodeButton();
+			PlaySound(clickSound);
+		}
 		if (GuiButton((Rectangle){168, 408, 120, 24}, "Decode"))
+		{
 			DecodeButton();
+			PlaySound(clickSound);
+		}
 		if (GuiTextBox((Rectangle){24, 456, 336, 192}, TextmultiBox005Text, 128, TextmultiBox005EditMode))
 			TextmultiBox005EditMode = !TextmultiBox005EditMode;
 		modeToggleGroupActive = GuiToggleGroup((Rectangle){240, 120, 40, 24}, "VIEW;DRAW", modeToggleGroupActive);
 		if (GuiLabelButton((Rectangle){240, 96, 120, 24}, "Modes"))
+		{
 			LabelButton007();
+		}
 		GuiGroupBox((Rectangle){drawingArea.x - 16, drawingArea.y - 16, drawingArea.width + 32, drawingArea.height + 32}, "Vitmap View");
 		ColorPickerValue = GuiColorPicker((Rectangle){240, 176, 96, 96}, NULL, ColorPickerValue);
+
+		BgGridColor = GuiColorPicker((Rectangle){60, 176, 96, 96}, NULL, BgGridColor);
+		DrawText(TextFormat("Background color"), 60, 146, 20, BLACK);
+
+		// Resolution changer o-matic
+		resolution = GuiSlider((Rectangle){60, 300, 96, 20}, "0", "32", resolution, 1.0, 5.0);
+		int realResolution = pow(2.0, roundf(resolution));
+		gridSize = (Vector2){realResolution, realResolution};
+		DrawText(TextFormat("Resolution: %i", realResolution), 60, 330, 20, BLACK);
+		DrawText(TextFormat("Slide volume: %f", targetVol), 60, 360, 20, BLACK);
 		//----------------------------------------------------------------------------------
 
 		EndDrawing();
 		//----------------------------------------------------------------------------------
+
+
+		lastMouseDrawAreaPos = mouseDrawAreaPos;
+
 	}
 
 	// De-Initialization
 	//--------------------------------------------------------------------------------------
+	UnloadSound(clickSound);
+	UnloadSound(pressSound);
+	UnloadSound(slidingSound);
+	UnloadSound(snapSound);
+
+    CloseAudioDevice();
+
 	CloseWindow(); // Close window and OpenGL context
 	//--------------------------------------------------------------------------------------
 
