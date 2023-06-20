@@ -159,7 +159,7 @@ int main()
 	Sound clickSound = LoadSound("assets/click.wav");
 	Sound pressSound = LoadSound("assets/press.wav");
 	Sound snapSound = LoadSound("assets/snap.wav");
-	Sound slidingSound = LoadSound("assets/sliding.wav");
+	Sound slidingSound = LoadSound("assets/firing.wav");
 
 	float realVol = 0.0;
 
