@@ -11,15 +11,6 @@
 #define MAX_SHAPES 24
 #define MAX_POINTS 24
 
-//----------------------------------------------------------------------------------
-// Controls Functions Declaration
-//----------------------------------------------------------------------------------
-static void SaveButton();
-static void LoadButton();
-static void EncodeButton();
-static void DecodeButton();
-static void LabelButton007();
-
 // Shapes are closed polygons
 typedef struct Shape
 {
@@ -33,6 +24,17 @@ typedef struct Vitmap
 	Shape shapes[MAX_SHAPES];
 	int numShapes;
 } Vitmap;
+
+
+//----------------------------------------------------------------------------------
+// Controls Functions Declaration
+//----------------------------------------------------------------------------------
+static void SaveButton(Vitmap* vitmap);
+static void LoadButton(Vitmap* vitmapOut);
+static void EncodeButton();
+static void DecodeButton();
+static void LabelButton007();
+
 
 void initVitmap(Vitmap *vitmap)
 {
@@ -313,12 +315,12 @@ int main()
 		//----------------------------------------------------------------------------------
 		if (GuiButton((Rectangle){24, 24, 120, 24}, "Save..."))
 		{
-			SaveButton();
+			SaveButton(&vitmap);
 			PlaySound(clickSound);
 		}
 		if (GuiButton((Rectangle){168, 24, 120, 24}, "Load..."))
 		{
-			LoadButton();
+			LoadButton(&vitmap);
 			PlaySound(clickSound);
 		}
 		if (GuiButton((Rectangle){24, 408, 120, 24}, "Encode"))
@@ -378,13 +380,13 @@ int main()
 //------------------------------------------------------------------------------------
 // Controls Functions Definitions (local)
 //------------------------------------------------------------------------------------
-static void SaveButton()
+static void SaveButton(Vitmap* vitmap)
 {
-	// TODO: Implement control logic
+	writeOutVitmap(vitmap, "MyVitmap.vmp");
 }
-static void LoadButton()
+static void LoadButton(Vitmap* vitmapOut)
 {
-	// TODO: Implement control logic
+	readInVitmap(vitmapOut, "MyVitmap.vmp");
 }
 static void EncodeButton()
 {
