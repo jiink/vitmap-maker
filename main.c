@@ -131,6 +131,18 @@ float lerp(float a, float b, float t)
 	return a + (b - a) * t;
 }
 
+size_t writeOutVitmap(Vitmap* vitmap, const char* filename)
+{
+	FILE* f = fopen(filename, "wb");
+	return fwrite(vitmap, sizeof(Vitmap), 1, f);
+}
+
+size_t readInVitmap(Vitmap* vitmapOut, const char* filename)
+{
+	FILE* f = fopen(filename, "rb");
+	return fread(vitmapOut, sizeof(Vitmap), 1, f);
+}
+
 //------------------------------------------------------------------------------------
 // Program main entry point
 //------------------------------------------------------------------------------------
