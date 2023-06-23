@@ -35,9 +35,10 @@ static void EncodeButton();
 static void DecodeButton();
 static void LabelButton007();
 
-int isPointInPoly(int nvert, float *vertx, float *verty, float testx, float testy)
+bool isPointInPoly(int nvert, float *vertx, float *verty, float testx, float testy)
 {
-    int i, j, c = 0;
+    int i, j = 0;
+    bool c = false;
     for (i = 0, j = nvert-1; i < nvert; j = i++) {
         if ( ((verty[i]>testy) != (verty[j]>testy)) &&
         (testx < (vertx[j]-vertx[i]) * (testy-verty[i]) / (verty[j]-verty[i]) + vertx[i]) )
@@ -45,16 +46,6 @@ int isPointInPoly(int nvert, float *vertx, float *verty, float testx, float test
     }
     return c;
 }
-
-bool isPointInTri(Vector2 p, Vector2 p0, Vector2 p1, Vector2 p2) {
-    float A = 1.0f/2.0f * (-p1.y * p2.x + p0.y * (-p1.x + p2.x) + p0.x * (p1.y - p2.y) + p1.x * p2.y);
-    float sign = A < 0.0f ? -1.0f : 1.0f;
-    float s = (p0.y * p2.x - p0.x * p2.y + (p2.y - p0.y) * p.x + (p0.x - p2.x) * p.y) * sign;
-    float t = (p0.x * p1.y - p0.y * p1.x + (p0.y - p1.y) * p.x + (p1.x - p0.x) * p.y) * sign;
-    
-    return s > 0.0f && t > 0.0f && (s + t) < 2.0f * A * sign;
-}
-
 
 void initVitmap(Vitmap *vitmap)
 {
@@ -307,10 +298,10 @@ int main(int argc, char *argv[])
             // See if there is this point is over a polygon
             for (int i = 0; i < vitmap.numShapes; i++)
             {
-                int numVerts = vitmap.shapes[i].numPoints;
+                int numVerts = vitmap.shapes[i].numPoints + 1;
                 float xVerts[MAX_POINTS];
                 float yVerts[MAX_POINTS];
-                for (int j = 0; j < numVerts + 1; j++)
+                for (int j = 0; j < numVerts; j++)
                 {
                     xVerts[j] = vitmap.shapes[i].points[j].x;
                     yVerts[j] = vitmap.shapes[i].points[j].y;
