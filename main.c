@@ -97,7 +97,7 @@ void drawShape(Shape *shape, Vector2 position, Vector2 scale)
     int numPoints = shape->numPoints;
     Color color = shape->color;
     // todo: figure out this +1 stuff
-    for (int i = 0; i <= numPoints; i++)
+    for (int i = 0; i < numPoints + 1; i++)
     {
         transformedPoints[i].x = position.x + points[i].x * scale.x;
         transformedPoints[i].y = position.y + points[i].y * scale.y;
@@ -206,6 +206,23 @@ Shape* getShapeUnderPos(Vitmap* vitmap, Vector2 pos)
 	}
 	printf("No shapes here.\n");
 	return NULL;
+}
+
+void drawShapeOutline(Shape* shape, Vector2 position, Vector2 scale)
+{
+    Vector2* points = (Vector2*)&shape->points;
+    Vector2 transformedPoints[MAX_POINTS];
+    int numPoints = shape->numPoints;
+	Color color = ColorFromHSV(GetTime() * 100, 1, 1);
+    // todo: figure out this +1 stuff
+    for (int i = 0; i < numPoints + 1; i++)
+    {
+        transformedPoints[i].x = position.x + points[i].x * scale.x;
+        transformedPoints[i].y = position.y + points[i].y * scale.y;
+    }
+    
+    DrawLineStrip(transformedPoints, numPoints + 1, color);
+    DrawLineV(transformedPoints[numPoints], transformedPoints[0], color);
 }
 
 //------------------------------------------------------------------------------------
@@ -349,7 +366,7 @@ int main(int argc, char *argv[])
 
         if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && isMouseInRect)
         {
-			Shape* shapeUnderMouse = getShapeUnderPos(&vitmap, mouseSnappedPos);
+			Shape* shapeUnderMouse = getShapeUnderPos(&vitmap, mouseDrawAreaPos);
 			if (shapeUnderMouse != NULL)
 			{
 				currentShape = shapeUnderMouse;
@@ -393,6 +410,7 @@ int main(int argc, char *argv[])
 
         rlDisableBackfaceCulling();
         drawVitmap(&vitmap, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
+		drawShapeOutline(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
         // rlEnableBackfaceCulling();
 
         DrawText(TextFormat("pts: %d", currentShape->numPoints), 24, 456, 20, BLACK);
