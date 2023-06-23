@@ -37,13 +37,13 @@ static void LabelButton007();
 
 int isPointInPoly(int nvert, float *vertx, float *verty, float testx, float testy)
 {
-  int i, j, c = 0;
-  for (i = 0, j = nvert-1; i < nvert; j = i++) {
-    if ( ((verty[i]>testy) != (verty[j]>testy)) &&
-     (testx < (vertx[j]-vertx[i]) * (testy-verty[i]) / (verty[j]-verty[i]) + vertx[i]) )
-       c = !c;
-  }
-  return c;
+    int i, j, c = 0;
+    for (i = 0, j = nvert-1; i < nvert; j = i++) {
+        if ( ((verty[i]>testy) != (verty[j]>testy)) &&
+        (testx < (vertx[j]-vertx[i]) * (testy-verty[i]) / (verty[j]-verty[i]) + vertx[i]) )
+        c = !c;
+    }
+    return c;
 }
 
 bool isPointInTri(Vector2 p, Vector2 p0, Vector2 p1, Vector2 p2) {
@@ -302,23 +302,23 @@ int main(int argc, char *argv[])
             vitmap.numShapes--;
         }
 
-		if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && isMouseInRect)
+        if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && isMouseInRect)
         {
-			// See if there is this point is over a polygon
-			for (int i = 0; i < vitmap.numShapes; i++)
-			{
-				int numVerts = vitmap.shapes[i].numPoints;
-				float xVerts[MAX_POINTS];
-				float yVerts[MAX_POINTS];
-				for (int j = 0; j < numVerts + 1; j++)
-				{
-					xVerts[j] = vitmap.shapes[i].points[j].x;
-					yVerts[j] = vitmap.shapes[i].points[j].y;
-				}
-				int result = isPointInPoly(numVerts, xVerts, yVerts, mouseDrawAreaPos.x, mouseDrawAreaPos.y);
-				printf("result: %d\n", result);
-			}
-		}
+            // See if there is this point is over a polygon
+            for (int i = 0; i < vitmap.numShapes; i++)
+            {
+                int numVerts = vitmap.shapes[i].numPoints;
+                float xVerts[MAX_POINTS];
+                float yVerts[MAX_POINTS];
+                for (int j = 0; j < numVerts + 1; j++)
+                {
+                    xVerts[j] = vitmap.shapes[i].points[j].x;
+                    yVerts[j] = vitmap.shapes[i].points[j].y;
+                }
+                int result = isPointInPoly(numVerts, xVerts, yVerts, mouseDrawAreaPos.x, mouseDrawAreaPos.y);
+                printf("result: %d\n", result);
+            }
+        }
 
         currentShape->color = (Color){ColorPickerValue.r, ColorPickerValue.g, ColorPickerValue.b, 255};
 
