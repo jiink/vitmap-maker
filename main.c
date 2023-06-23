@@ -156,6 +156,58 @@ size_t readInVitmap(Vitmap* vitmapOut, const char* filename)
     return fread(vitmapOut, sizeof(Vitmap), 1, f);
 }
 
+int getShapesUnderPos(Vitmap* vitmap, Vector2 pos, Shape* shapesUnderMouseOut[MAX_SHAPES])
+{
+	int shapesUnderMouseIndex = 0;
+	for (int i = 0; i < vitmap->numShapes; i++)
+	{
+		int numVerts = vitmap->shapes[i].numPoints + 1;
+		float xVerts[MAX_POINTS];
+		float yVerts[MAX_POINTS];
+		for (int j = 0; j < numVerts; j++)
+		{
+			xVerts[j] = vitmap->shapes[i].points[j].x;
+			yVerts[j] = vitmap->shapes[i].points[j].y;
+		}
+		if (isPointInPoly(numVerts, xVerts, yVerts, pos.x, pos.y))
+		{
+			shapesUnderMouseOut[shapesUnderMouseIndex] = &vitmap->shapes[i];
+			shapesUnderMouseIndex++;
+		}
+	}
+	int shapesFound = shapesUnderMouseIndex;
+	return shapesFound;
+}
+
+Shape* getShapeUnderPos(Vitmap* vitmap, Vector2 pos)
+{
+	Shape* shapesUnderPos[MAX_SHAPES];
+	// initialize them to null
+	for (int i = 0; i < MAX_SHAPES; i++)
+	{
+		shapesUnderPos[i] = NULL;
+	}
+	getShapesUnderPos(vitmap, pos, shapesUnderPos);
+	// print out the results
+	for (int i = 0; i < MAX_SHAPES; i++)
+	{
+		if (shapesUnderPos[i] != NULL)
+		{
+			printf("Shape %x is under the mouse!\n", shapesUnderPos[i]);
+		}
+	}
+	// Find and return the one on top (The last one in the array)
+	for (int i = MAX_SHAPES - 1; i >= 0; i--)
+	{
+		if (shapesUnderPos[i] != NULL)
+		{
+			return shapesUnderPos[i];
+		}
+	}
+	printf("No shapes here.\n");
+	return NULL;
+}
+
 //------------------------------------------------------------------------------------
 // Program main entry point
 //------------------------------------------------------------------------------------
@@ -216,6 +268,7 @@ int main(int argc, char *argv[])
 
     PlaySound(slidingSound);
 
+	Shape* currentShape = &vitmap.shapes[vitmap.numShapes];
 
     // Main game loop
     while (!WindowShouldClose()) // Detect window close button or ESC key
@@ -262,7 +315,7 @@ int main(int argc, char *argv[])
         );
         // ------------------------------------------------------------
 
-        Shape *currentShape = &vitmap.shapes[vitmap.numShapes];
+        
         
 
         if (isMouseInRect)
@@ -286,6 +339,7 @@ int main(int argc, char *argv[])
         if (IsKeyPressed(KEY_ENTER) && vitmap.numShapes < MAX_SHAPES - 1)
         {
             vitmap.numShapes++;
+			currentShape = &vitmap.shapes[vitmap.numShapes];
             PlaySound(snapSound);
         }
         if (IsKeyPressed(KEY_DELETE) && vitmap.numShapes > 0)
@@ -295,20 +349,12 @@ int main(int argc, char *argv[])
 
         if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && isMouseInRect)
         {
-            // See if there is this point is over a polygon
-            for (int i = 0; i < vitmap.numShapes; i++)
-            {
-                int numVerts = vitmap.shapes[i].numPoints + 1;
-                float xVerts[MAX_POINTS];
-                float yVerts[MAX_POINTS];
-                for (int j = 0; j < numVerts; j++)
-                {
-                    xVerts[j] = vitmap.shapes[i].points[j].x;
-                    yVerts[j] = vitmap.shapes[i].points[j].y;
-                }
-                int result = isPointInPoly(numVerts, xVerts, yVerts, mouseDrawAreaPos.x, mouseDrawAreaPos.y);
-                printf("result: %d\n", result);
-            }
+			Shape* shapeUnderMouse = getShapeUnderPos(&vitmap, mouseSnappedPos);
+			if (shapeUnderMouse != NULL)
+			{
+				currentShape = shapeUnderMouse;
+			}
+			PlaySound(clickSound);
         }
 
         currentShape->color = (Color){ColorPickerValue.r, ColorPickerValue.g, ColorPickerValue.b, 255};
