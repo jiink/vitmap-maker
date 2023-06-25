@@ -11,6 +11,22 @@
 #define MAX_SHAPES 24
 #define MAX_POINTS 24
 
+typedef enum Tool
+{
+	TOOL_DRAW,
+	TOOL_SELECT,
+	TOOL_ERASE,
+	TOOL_PAN,
+	TOOL_MAX
+} Tool;
+
+const char* toolNames[TOOL_MAX] = {
+	"Draw",
+	"Select",
+	"Erase",
+	"Pan"
+};
+
 // Shapes are closed polygons
 typedef struct Shape
 {
@@ -24,6 +40,18 @@ typedef struct Vitmap
     Shape shapes[MAX_SHAPES];
     int numShapes;
 } Vitmap;
+
+typedef struct VitmapAnimation
+{
+	Vitmap frames[24];
+	int numFrames;
+} VitmapAnimation;
+
+typedef struct VitmapAnimationSet
+{
+	VitmapAnimation animations[24];
+	int numAnimations;
+} VitmapAnimationSet;
 
 
 //----------------------------------------------------------------------------------
@@ -272,7 +300,6 @@ int main(int argc, char *argv[])
     //----------------------------------------------------------------------------------
     bool TextmultiBox005EditMode = false;
     char TextmultiBox005Text[128] = "SAMPLE TEXT";
-    int modeToggleGroupActive = 0;
     Color ColorPickerValue = {0, 0, 0, 0};
     Color BgGridColor = {50, 50, 50, 255};
     float resolution = 2.0;
@@ -286,6 +313,7 @@ int main(int argc, char *argv[])
     PlaySound(slidingSound);
 
 	Shape* currentShape = &vitmap.shapes[vitmap.numShapes];
+	Tool currentTool = TOOL_DRAW;
 
     // Main game loop
     while (!WindowShouldClose()) // Detect window close button or ESC key
@@ -331,9 +359,6 @@ int main(int argc, char *argv[])
             realVol
         );
         // ------------------------------------------------------------
-
-        
-        
 
         if (isMouseInRect)
         {
@@ -440,7 +465,7 @@ int main(int argc, char *argv[])
         }
         if (GuiTextBox((Rectangle){24, 456, 336, 192}, TextmultiBox005Text, 128, TextmultiBox005EditMode))
             TextmultiBox005EditMode = !TextmultiBox005EditMode;
-        modeToggleGroupActive = GuiToggleGroup((Rectangle){240, 120, 40, 24}, "VIEW;DRAW", modeToggleGroupActive);
+        currentTool = GuiToggleGroup((Rectangle){240, 120, 40, 24}, "DRAW;SELECT;ERASE;PAN", currentTool);
         if (GuiLabelButton((Rectangle){240, 96, 120, 24}, "Modes"))
         {
             LabelButton007();
@@ -457,6 +482,7 @@ int main(int argc, char *argv[])
         gridSize = (Vector2){realResolution, realResolution};
         DrawText(TextFormat("Resolution: %i", realResolution), 60, 330, 20, BLACK);
         DrawText(TextFormat("Slide volume: %f", targetVol), 60, 360, 20, BLACK);
+		DrawText(TextFormat("Tool: %s", toolNames[currentTool]), 60, 390, 20, GREEN);
         //----------------------------------------------------------------------------------
 
         EndDrawing();
