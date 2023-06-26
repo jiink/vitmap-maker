@@ -47,6 +47,7 @@ typedef struct VitmapAnimation
 {
 	Vitmap vitmaps[MAX_FRAMES];
 	int numFrames;
+    int currentFrame;
 } VitmapAnimation;
 
 typedef struct VitmapAnimationSet
@@ -98,6 +99,7 @@ void initVitmap(Vitmap* vitmap)
 void initVitmapAnimation(VitmapAnimation* vitmapAnimation)
 {
 	vitmapAnimation->numFrames = 0;
+    vitmapAnimation->currentFrame = 0;
 	for (int i = 0; i < MAX_FRAMES; i++)
 	{
 		initVitmap(&vitmapAnimation->vitmaps[i]);
@@ -296,13 +298,9 @@ int main(int argc, char *argv[])
     Vector2 gridSize = {16, 16};
     Rectangle drawingArea = {424, 40, 592, 592};
     
-    VitmapAnimationSet vitmapAnimSet;
-    //initVitmapAnimationSet(&vitmapAnimSet);
-	// VitmapAnimation* currentVitmapAnim = &vitmapAnimSet.animations[0];
-	//Vitmap* currentVitmap = &currentVitmapAnim->vitmaps[0];
-	Vitmap vmp;
-	initVitmap(&vmp);
-	Vitmap* currentVitmap = &vmp;
+	VitmapAnimation vitmapAnim;
+    initVitmapAnimation(&vitmapAnim);
+	Vitmap* currentVitmap = &vitmapAnim.vitmaps[vitmapAnim.currentFrame];
 	Shape* currentShape = &currentVitmap->shapes[currentVitmap->numShapes];
     if (fileToLoad != NULL)
     {
