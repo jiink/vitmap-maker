@@ -511,10 +511,10 @@ int main(int argc, char *argv[])
         // Animation frame slider
         if (vitmapAnim.numFrames > 1)
         {
-            vitmapAnim.currentFrame = GuiSlider((Rectangle){500, 640, 300, 20}, "0", "32", vitmapAnim.currentFrame, 0.0, (float)(vitmapAnim.numFrames - 1));
+            vitmapAnim.currentFrame = (int)roundf(GuiSlider((Rectangle){500, 640, 300, 20}, "0", TextFormat("%d", vitmapAnim.numFrames - 1), vitmapAnim.currentFrame, 0.0, (float)(vitmapAnim.numFrames - 1)));
         }
         // Animation add frame button
-        if (GuiButton((Rectangle){808, 640, 20, 20}, "+"))
+        if (GuiButton((Rectangle){816, 640, 20, 20}, "+"))
         {
             vitmapAnim.numFrames++;
         }
