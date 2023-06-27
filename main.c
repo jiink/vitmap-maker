@@ -32,27 +32,27 @@ const char* toolNames[TOOL_MAX] = {
 // Shapes are closed polygons
 typedef struct Shape
 {
-    Vector2 points[MAX_POINTS];
+    Vector2* points;
     int numPoints;
     Color color;
 } Shape;
 
 typedef struct Vitmap
 {
-    Shape shapes[MAX_SHAPES];
+    Shape* shapes;
     int numShapes;
 } Vitmap;
 
 typedef struct VitmapAnimation
 {
-    Vitmap vitmaps[MAX_FRAMES];
+    Vitmap* vitmaps;
     int numFrames;
     int currentFrame;
 } VitmapAnimation;
 
 typedef struct VitmapAnimationSet
 {
-    VitmapAnimation animations[MAX_ANIMS];
+    VitmapAnimation* animations;
     int numAnimations;
 } VitmapAnimationSet;
 
@@ -81,38 +81,43 @@ void initShape(Shape* shape)
 {
     shape->numPoints = 0;
     shape->color = (Color){0, 0, 0, 0};
-    for (int i = 0; i < MAX_POINTS; i++)
-    {
-        shape->points[i] = (Vector2){0, 0};
-    }
 }
 
 void initVitmap(Vitmap* vitmap)
 {
     vitmap->numShapes = 0;
-    for (int i = 0; i < MAX_SHAPES; i++)
-    {
-        initShape(&vitmap->shapes[i]);
-    }
 }
 
 void initVitmapAnimation(VitmapAnimation* vitmapAnimation)
 {
-    vitmapAnimation->numFrames = 1;
+    vitmapAnimation->numFrames = 0;
     vitmapAnimation->currentFrame = 0;
-    for (int i = 0; i < MAX_FRAMES; i++)
-    {
-        initVitmap(&vitmapAnimation->vitmaps[i]);
-    }
 }
 
 void initVitmapAnimationSet(VitmapAnimationSet* vitmapAnimationSet)
 {
     vitmapAnimationSet->numAnimations = 0;
-    for (int i = 0; i < MAX_ANIMS; i++)
-    {
-        initVitmapAnimation(&vitmapAnimationSet->animations[i]);
-    }
+}
+
+void addPointToShape(Shape* shape, Vector2 point)
+{
+    shape->numPoints++;
+    shape->points = (Vector2*)realloc(shape->points, shape->numPoints * sizeof(Vector2));
+    shape->points[shape->numPoints - 1] = point;
+}
+
+void addShapeToVitmap(Vitmap* vitmap, Shape shape)
+{
+    vitmap->numShapes++;
+    vitmap->shapes = (Shape*)realloc(vitmap->shapes, vitmap->numShapes * sizeof(Shape));
+    vitmap->shapes[vitmap->numShapes - 1] = shape;
+}
+
+void addVitmapToAnimation(VitmapAnimation* Animation, Vitmap vitmap)
+{
+    Animation->numFrames++;
+    Animation->vitmaps = (Vitmap*)realloc(Animation->vitmaps, Animation->numFrames * sizeof(Vitmap));
+    Animation->vitmaps[Animation->numFrames - 1] = vitmap;
 }
 
 void drawTesselation(TESStesselator* tesselator, Color color)
@@ -198,16 +203,76 @@ float lerp(float a, float b, float t)
     return a + (b - a) * t;
 }
 
-size_t writeOutVitmap(Vitmap* vitmap, const char* filename)
+void saveVitmapToFile(Vitmap* vitmap, const char* filename)
 {
-    FILE* f = fopen(filename, "wb");
-    return fwrite(vitmap, sizeof(Vitmap), 1, f);
+    // Open the file in binary write mode
+    FILE* file = fopen(filename, "wb");
+    if (file == NULL)
+    {
+        printf("Failed to open file for writing.\n");
+        return;
+    }
+    
+    // Write the number of shapes in the Vitmap
+    fwrite(&(vitmap->numShapes), sizeof(int), 1, file);
+    
+    // Write each shape in the Vitmap
+    for (int i = 0; i < vitmap->numShapes; i++)
+    {
+        Shape* shape = &(vitmap->shapes[i]);
+        
+        // Write the number of points in the shape
+        fwrite(&(shape->numPoints), sizeof(int), 1, file);
+        
+        // Write the points of the shape
+        fwrite(shape->points, sizeof(Vector2), shape->numPoints, file);
+        
+        // Write the color of the shape
+        fwrite(&(shape->color), sizeof(Color), 1, file);
+    }
+    
+    // Close the file
+    fclose(file);
+    
+    printf("Vitmap saved successfully.\n");
 }
 
-size_t readInVitmap(Vitmap* vitmapOut, const char* filename)
+Vitmap loadVitmapFromFile(const char* filename)
 {
-    FILE* f = fopen(filename, "rb");
-    return fread(vitmapOut, sizeof(Vitmap), 1, f);
+    Vitmap vitmap;
+    
+    // Open the file in binary read mode
+    FILE* file = fopen(filename, "rb");
+    if (file == NULL)
+    {
+        printf("Failed to open file for reading.\n");
+        return vitmap;
+    }
+    
+    // Read the number of shapes in the Vitmap
+    fread(&(vitmap.numShapes), sizeof(int), 1, file);
+    
+    // Read each shape in the Vitmap
+    for (int i = 0; i < vitmap.numShapes; i++)
+    {
+        Shape* shape = &(vitmap.shapes[i]);
+        
+        // Read the number of points in the shape
+        fread(&(shape->numPoints), sizeof(int), 1, file);
+        
+        // Read the points of the shape
+        fread(shape->points, sizeof(Vector2), shape->numPoints, file);
+        
+        // Read the color of the shape
+        fread(&(shape->color), sizeof(Color), 1, file);
+    }
+    
+    // Close the file
+    fclose(file);
+    
+    printf("Vitmap loaded successfully.\n");
+    
+    return vitmap;
 }
 
 int getShapesUnderPos(Vitmap* vitmap, Vector2 pos, Shape* shapesUnderMouseOut[MAX_SHAPES])
@@ -304,7 +369,8 @@ int main(int argc, char *argv[])
     Shape* currentShape = &currentVitmap->shapes[currentVitmap->numShapes];
     if (fileToLoad != NULL)
     {
-        readInVitmap(currentVitmap, fileToLoad);
+        Vitmap loadedVmp = loadVitmapFromFile(fileToLoad);
+        currentVitmap = &loadedVmp;
     }
 
     int screenWidth = 1280;
@@ -563,11 +629,12 @@ int main(int argc, char *argv[])
 //------------------------------------------------------------------------------------
 static void SaveButton(Vitmap* vitmap, const char* name)
 {
-    writeOutVitmap(vitmap, name);
+    saveVitmapToFile(vitmap, name);
 }
 static void LoadButton(Vitmap* vitmapOut, const char* name)
 {
-    readInVitmap(vitmapOut, name);
+    
+    *vitmapOut = loadVitmapFromFile(name);
 }
 static void EncodeButton()
 {
