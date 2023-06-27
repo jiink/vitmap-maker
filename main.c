@@ -326,8 +326,8 @@ int main(int argc, char *argv[])
 
     // vitmapMaker: controls initialization
     //----------------------------------------------------------------------------------
-    bool TextmultiBox005EditMode = false;
-    char TextmultiBox005Text[128] = "SAMPLE TEXT";
+    bool FilePathEditMode = false;
+    char FilePathText[128] = "MyVitmap.vmp";
     Color ColorPickerValue = {0, 0, 0, 0};
     Color BgGridColor = {50, 50, 50, 255};
     float resolution = 2.0;
@@ -470,14 +470,24 @@ int main(int argc, char *argv[])
 
         // raygui: controls drawing
         //----------------------------------------------------------------------------------
-        if (GuiButton((Rectangle){24, 24, 120, 24}, "Save..."))
+        if (GuiButton((Rectangle){24, 24, 120, 24}, "Save Vitmap..."))
         {
-            SaveButton(currentVitmap, "MyVitmap.vmp");
+            SaveButton(currentVitmap, FilePathText);
             PlaySound(clickSound);
         }
-        if (GuiButton((Rectangle){168, 24, 120, 24}, "Load..."))
+        if (GuiButton((Rectangle){168, 24, 120, 24}, "Load Vitmap..."))
         {
-            LoadButton(currentVitmap, "MyVitmap.vmp");
+            LoadButton(currentVitmap, FilePathText);
+            PlaySound(clickSound);
+        }
+        if (GuiButton((Rectangle){24, 48, 120, 24}, "Save Animation..."))
+        {
+            
+            PlaySound(clickSound);
+        }
+        if (GuiButton((Rectangle){168, 48, 120, 24}, "Load Animation..."))
+        {
+            
             PlaySound(clickSound);
         }
         if (GuiButton((Rectangle){24, 408, 120, 24}, "Encode"))
@@ -490,8 +500,8 @@ int main(int argc, char *argv[])
             DecodeButton();
             PlaySound(clickSound);
         }
-        if (GuiTextBox((Rectangle){24, 456, 336, 192}, TextmultiBox005Text, 128, TextmultiBox005EditMode))
-            TextmultiBox005EditMode = !TextmultiBox005EditMode;
+        if (GuiTextBox((Rectangle){24, 4, 336, 20}, FilePathText, 128, FilePathEditMode))
+            FilePathEditMode = !FilePathEditMode;
         currentTool = GuiToggleGroup((Rectangle){240, 120, 40, 24}, "DRAW;SELECT;ERASE;PAN", currentTool);
         if (GuiLabelButton((Rectangle){240, 96, 120, 24}, "Modes"))
         {
