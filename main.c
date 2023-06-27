@@ -15,18 +15,18 @@
 
 typedef enum Tool
 {
-	TOOL_DRAW,
-	TOOL_SELECT,
-	TOOL_ERASE,
-	TOOL_PAN,
-	TOOL_MAX
+    TOOL_DRAW,
+    TOOL_SELECT,
+    TOOL_ERASE,
+    TOOL_PAN,
+    TOOL_MAX
 } Tool;
 
 const char* toolNames[TOOL_MAX] = {
-	"Draw",
-	"Select",
-	"Erase",
-	"Pan"
+    "Draw",
+    "Select",
+    "Erase",
+    "Pan"
 };
 
 // Shapes are closed polygons
@@ -45,15 +45,15 @@ typedef struct Vitmap
 
 typedef struct VitmapAnimation
 {
-	Vitmap vitmaps[MAX_FRAMES];
-	int numFrames;
+    Vitmap vitmaps[MAX_FRAMES];
+    int numFrames;
     int currentFrame;
 } VitmapAnimation;
 
 typedef struct VitmapAnimationSet
 {
-	VitmapAnimation animations[MAX_ANIMS];
-	int numAnimations;
+    VitmapAnimation animations[MAX_ANIMS];
+    int numAnimations;
 } VitmapAnimationSet;
 
 //----------------------------------------------------------------------------------
@@ -79,12 +79,12 @@ bool isPointInPoly(int nvert, float *vertx, float *verty, float testx, float tes
 
 void initShape(Shape* shape)
 {
-	shape->numPoints = 0;
-	shape->color = (Color){0, 0, 0, 0};
-	for (int i = 0; i < MAX_POINTS; i++)
-	{
-		shape->points[i] = (Vector2){0, 0};
-	}
+    shape->numPoints = 0;
+    shape->color = (Color){0, 0, 0, 0};
+    for (int i = 0; i < MAX_POINTS; i++)
+    {
+        shape->points[i] = (Vector2){0, 0};
+    }
 }
 
 void initVitmap(Vitmap* vitmap)
@@ -98,21 +98,21 @@ void initVitmap(Vitmap* vitmap)
 
 void initVitmapAnimation(VitmapAnimation* vitmapAnimation)
 {
-	vitmapAnimation->numFrames = 0;
+    vitmapAnimation->numFrames = 1;
     vitmapAnimation->currentFrame = 0;
-	for (int i = 0; i < MAX_FRAMES; i++)
-	{
-		initVitmap(&vitmapAnimation->vitmaps[i]);
-	}
+    for (int i = 0; i < MAX_FRAMES; i++)
+    {
+        initVitmap(&vitmapAnimation->vitmaps[i]);
+    }
 }
 
 void initVitmapAnimationSet(VitmapAnimationSet* vitmapAnimationSet)
 {
-	vitmapAnimationSet->numAnimations = 0;
-	for (int i = 0; i < MAX_ANIMS; i++)
-	{
-		initVitmapAnimation(&vitmapAnimationSet->animations[i]);
-	}
+    vitmapAnimationSet->numAnimations = 0;
+    for (int i = 0; i < MAX_ANIMS; i++)
+    {
+        initVitmapAnimation(&vitmapAnimationSet->animations[i]);
+    }
 }
 
 void drawTesselation(TESStesselator* tesselator, Color color)
@@ -212,54 +212,54 @@ size_t readInVitmap(Vitmap* vitmapOut, const char* filename)
 
 int getShapesUnderPos(Vitmap* vitmap, Vector2 pos, Shape* shapesUnderMouseOut[MAX_SHAPES])
 {
-	int shapesUnderMouseIndex = 0;
-	for (int i = 0; i < vitmap->numShapes; i++)
-	{
-		int numVerts = vitmap->shapes[i].numPoints + 1;
-		float xVerts[MAX_POINTS];
-		float yVerts[MAX_POINTS];
-		for (int j = 0; j < numVerts; j++)
-		{
-			xVerts[j] = vitmap->shapes[i].points[j].x;
-			yVerts[j] = vitmap->shapes[i].points[j].y;
-		}
-		if (isPointInPoly(numVerts, xVerts, yVerts, pos.x, pos.y))
-		{
-			shapesUnderMouseOut[shapesUnderMouseIndex] = &vitmap->shapes[i];
-			shapesUnderMouseIndex++;
-		}
-	}
-	int shapesFound = shapesUnderMouseIndex;
-	return shapesFound;
+    int shapesUnderMouseIndex = 0;
+    for (int i = 0; i < vitmap->numShapes; i++)
+    {
+        int numVerts = vitmap->shapes[i].numPoints + 1;
+        float xVerts[MAX_POINTS];
+        float yVerts[MAX_POINTS];
+        for (int j = 0; j < numVerts; j++)
+        {
+            xVerts[j] = vitmap->shapes[i].points[j].x;
+            yVerts[j] = vitmap->shapes[i].points[j].y;
+        }
+        if (isPointInPoly(numVerts, xVerts, yVerts, pos.x, pos.y))
+        {
+            shapesUnderMouseOut[shapesUnderMouseIndex] = &vitmap->shapes[i];
+            shapesUnderMouseIndex++;
+        }
+    }
+    int shapesFound = shapesUnderMouseIndex;
+    return shapesFound;
 }
 
 Shape* getShapeUnderPos(Vitmap* vitmap, Vector2 pos)
 {
-	Shape* shapesUnderPos[MAX_SHAPES];
-	// initialize them to null
-	for (int i = 0; i < MAX_SHAPES; i++)
-	{
-		shapesUnderPos[i] = NULL;
-	}
-	getShapesUnderPos(vitmap, pos, shapesUnderPos);
-	// print out the results
-	for (int i = 0; i < MAX_SHAPES; i++)
-	{
-		if (shapesUnderPos[i] != NULL)
-		{
-			printf("Shape %x is under the mouse!\n", shapesUnderPos[i]);
-		}
-	}
-	// Find and return the one on top (The last one in the array)
-	for (int i = MAX_SHAPES - 1; i >= 0; i--)
-	{
-		if (shapesUnderPos[i] != NULL)
-		{
-			return shapesUnderPos[i];
-		}
-	}
-	printf("No shapes here.\n");
-	return NULL;
+    Shape* shapesUnderPos[MAX_SHAPES];
+    // initialize them to null
+    for (int i = 0; i < MAX_SHAPES; i++)
+    {
+        shapesUnderPos[i] = NULL;
+    }
+    getShapesUnderPos(vitmap, pos, shapesUnderPos);
+    // print out the results
+    for (int i = 0; i < MAX_SHAPES; i++)
+    {
+        if (shapesUnderPos[i] != NULL)
+        {
+            printf("Shape %x is under the mouse!\n", shapesUnderPos[i]);
+        }
+    }
+    // Find and return the one on top (The last one in the array)
+    for (int i = MAX_SHAPES - 1; i >= 0; i--)
+    {
+        if (shapesUnderPos[i] != NULL)
+        {
+            return shapesUnderPos[i];
+        }
+    }
+    printf("No shapes here.\n");
+    return NULL;
 }
 
 void drawShapeOutline(Shape* shape, Vector2 position, Vector2 scale)
@@ -267,7 +267,7 @@ void drawShapeOutline(Shape* shape, Vector2 position, Vector2 scale)
     Vector2* points = (Vector2*)&shape->points;
     Vector2 transformedPoints[MAX_POINTS];
     int numPoints = shape->numPoints;
-	Color color = ColorFromHSV(GetTime() * 100, 1, 1);
+    Color color = ColorFromHSV(GetTime() * 100, 1, 1);
     // todo: figure out this +1 stuff
     for (int i = 0; i < numPoints + 1; i++)
     {
@@ -298,10 +298,10 @@ int main(int argc, char *argv[])
     Vector2 gridSize = {16, 16};
     Rectangle drawingArea = {424, 40, 592, 592};
     
-	VitmapAnimation vitmapAnim;
+    VitmapAnimation vitmapAnim;
     initVitmapAnimation(&vitmapAnim);
-	Vitmap* currentVitmap = &vitmapAnim.vitmaps[vitmapAnim.currentFrame];
-	Shape* currentShape = &currentVitmap->shapes[currentVitmap->numShapes];
+    Vitmap* currentVitmap = &vitmapAnim.vitmaps[vitmapAnim.currentFrame];
+    Shape* currentShape = &currentVitmap->shapes[currentVitmap->numShapes];
     if (fileToLoad != NULL)
     {
         readInVitmap(currentVitmap, fileToLoad);
@@ -340,16 +340,15 @@ int main(int argc, char *argv[])
 
     PlaySound(slidingSound);
 
-	
-	Tool currentTool = TOOL_DRAW;
+    
+    Tool currentTool = TOOL_DRAW;
 
     // Main game loop
     while (!WindowShouldClose()) // Detect window close button or ESC key
     {
         // Update
-        //----------------------------------------------------------------------------------
-        // TODO: Implement required update logic
-        //----------------------------------------------------------------------------------
+        Vitmap* currentVitmap = &vitmapAnim.vitmaps[vitmapAnim.currentFrame];
+        Shape* currentShape = &currentVitmap->shapes[currentVitmap->numShapes];
 
         // Get mouse coords in drawingArea coords
         Vector2 mouseDrawAreaPos = 
@@ -409,7 +408,7 @@ int main(int argc, char *argv[])
         if (IsKeyPressed(KEY_ENTER) && currentVitmap->numShapes < MAX_SHAPES - 1)
         {
             currentVitmap->numShapes++;
-			currentShape = &currentVitmap->shapes[currentVitmap->numShapes];
+            currentShape = &currentVitmap->shapes[currentVitmap->numShapes];
             PlaySound(snapSound);
         }
         if (IsKeyPressed(KEY_DELETE) && currentVitmap->numShapes > 0)
@@ -419,12 +418,12 @@ int main(int argc, char *argv[])
 
         if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && isMouseInRect)
         {
-			Shape* shapeUnderMouse = getShapeUnderPos(currentVitmap, mouseDrawAreaPos);
-			if (shapeUnderMouse != NULL)
-			{
-				currentShape = shapeUnderMouse;
-			}
-			PlaySound(clickSound);
+            Shape* shapeUnderMouse = getShapeUnderPos(currentVitmap, mouseDrawAreaPos);
+            if (shapeUnderMouse != NULL)
+            {
+                currentShape = shapeUnderMouse;
+            }
+            PlaySound(clickSound);
         }
 
         currentShape->color = (Color){ColorPickerValue.r, ColorPickerValue.g, ColorPickerValue.b, 255};
@@ -463,7 +462,7 @@ int main(int argc, char *argv[])
 
         rlDisableBackfaceCulling();
         drawVitmap(currentVitmap, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
-		drawShapeOutline(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
+        drawShapeOutline(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
         // rlEnableBackfaceCulling();
 
         DrawText(TextFormat("pts: %d", currentShape->numPoints), 24, 456, 20, BLACK);
@@ -508,9 +507,22 @@ int main(int argc, char *argv[])
         resolution = GuiSlider((Rectangle){60, 300, 96, 20}, "0", "32", resolution, 1.0, 5.0);
         int realResolution = pow(2.0, roundf(resolution));
         gridSize = (Vector2){realResolution, realResolution};
-        DrawText(TextFormat("Resolution: %i", realResolution), 60, 330, 20, BLACK);
-        DrawText(TextFormat("Slide volume: %f", targetVol), 60, 360, 20, BLACK);
-		DrawText(TextFormat("Tool: %s", toolNames[currentTool]), 60, 390, 20, GREEN);
+
+        // Animation frame slider
+        if (vitmapAnim.numFrames > 1)
+        {
+            vitmapAnim.currentFrame = GuiSlider((Rectangle){500, 640, 300, 20}, "0", "32", vitmapAnim.currentFrame, 0.0, (float)(vitmapAnim.numFrames - 1));
+        }
+        // Animation add frame button
+        if (GuiButton((Rectangle){808, 640, 20, 20}, "+"))
+        {
+            vitmapAnim.numFrames++;
+        }
+
+        DrawText(TextFormat("Resolution: %i", realResolution), 60, 330, 20, WHITE);
+        DrawText(TextFormat("Slide volume: %f", targetVol), 60, 360, 20, WHITE);
+        DrawText(TextFormat("Tool: %s", toolNames[currentTool]), 60, 390, 20, WHITE);
+        DrawText(TextFormat("Frame: %i", vitmapAnim.currentFrame), 500, 620, 20, WHITE);
         //----------------------------------------------------------------------------------
 
         EndDrawing();
