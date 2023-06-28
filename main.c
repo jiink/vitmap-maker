@@ -94,6 +94,33 @@ void initVitmapAnimationSet(VitmapAnimationSet* vitmapAnimationSet)
     vitmapAnimationSet->numAnimations = 0;
 }
 
+void printVitmap(const Vitmap* vitmap)
+{
+    printf("Vitmap:\n");
+    printf("  Number of Shapes: %d\n", vitmap->numShapes);
+    printf("  Shapes:\n");
+
+    for (int i = 0; i < vitmap->numShapes; i++)
+    {
+        printf("    Shape %d:\n", i + 1);
+        printf("      Number of Points: %d\n", vitmap->shapes[i].numPoints);
+        printf("      Color (RGBA): (%d, %d, %d, %d)\n",
+               vitmap->shapes[i].color.r,
+               vitmap->shapes[i].color.g,
+               vitmap->shapes[i].color.b,
+               vitmap->shapes[i].color.a);
+
+        printf("      Points:\n");
+        for (int j = 0; j < vitmap->shapes[i].numPoints; j++)
+        {
+            printf("          Point %d: (%.2f, %.2f)\n",
+                   j + 1,
+                   vitmap->shapes[i].points[j].x,
+                   vitmap->shapes[i].points[j].y);
+        }
+    }
+}
+
 Shape* createShape()
 {
     Shape* shape = (Shape*)malloc(sizeof(Shape));
@@ -101,7 +128,7 @@ Shape* createShape()
         return NULL;
     }
     shape->numPoints = 0;
-    shape->color = (Color){0, 0, 0, 0};
+    shape->color = (Color){0, 0, 0, 255};
     shape->points = NULL;
     return shape;
 }
@@ -168,7 +195,7 @@ Vitmap* addVitmapToAnimation(VitmapAnimation* animation, Vitmap vitmap)
 
 void drawTesselation(TESStesselator* tesselator, Color color)
 {
-    int vertexCount = tessGetVertexCount(tesselator);
+    //int vertexCount = tessGetVertexCount(tesselator);
     const TESSreal *vertices = tessGetVertices(tesselator);
     // Print out vertices
     //printf("vertices:\n");
@@ -303,7 +330,14 @@ void saveVitmapToFile(Vitmap* vitmap, const char* filename)
 
 Vitmap loadVitmapFromFile(const char* filename)
 {
-    Vitmap vitmap;
+    Vitmap vitmap = *createVitmap();
+
+    // addShapeToVitmap(&vitmap);
+    // addPointToShape(&vitmap.shapes[0], (Vector2){0.0f, 0.0f});
+    // addPointToShape(&vitmap.shapes[0], (Vector2){1.0f, 1.0f});
+    // addPointToShape(&vitmap.shapes[0], (Vector2){0.0f, 1.0f});
+
+    // printVitmap(&vitmap);
     
     // Open the file in binary read mode
     FILE* file = fopen(filename, "rb");
@@ -314,18 +348,24 @@ Vitmap loadVitmapFromFile(const char* filename)
     }
     
     // Read the number of shapes in the Vitmap
-    fread(&(vitmap.numShapes), sizeof(int), 1, file);
-    
+    int numShapesInTheFile = 0;
+    fread(&numShapesInTheFile, sizeof(int), 1, file);
+    printf("Number of shapes: %d\n", vitmap.numShapes);
     // Read each shape in the Vitmap
-    for (int i = 0; i < vitmap.numShapes; i++)
+    for (int i = 0; i < numShapesInTheFile; i++)
     {
-        Shape* shape = &(vitmap.shapes[i]);
+        addShapeToVitmap(&vitmap);
+        Shape* shape = &(vitmap.shapes[vitmap.numShapes - 1]);
         
         // Read the number of points in the shape
-        fread(&(shape->numPoints), sizeof(int), 1, file);
-        
-        // Read the points of the shape
-        fread(shape->points, sizeof(Vector2), shape->numPoints, file);
+        int numPointsInHere = 0;
+        fread(&(numPointsInHere), sizeof(int), 1, file);
+        for (int j = 0; j < numPointsInHere; j++)
+        {
+            Vector2 pointToAdd = {0.0f, 0.0f};
+            fread(&pointToAdd, sizeof(Vector2), 1, file);
+            addPointToShape(shape, pointToAdd);
+        }
         
         // Read the color of the shape
         fread(&(shape->color), sizeof(Color), 1, file);
@@ -417,17 +457,17 @@ int main(int argc, char *argv[])
     
     //addShapeToVitmap(&vitmap, shape);
     Vitmap* currentVitmap = createVitmap();
-    addShapeToVitmap(currentVitmap);
+    //addShapeToVitmap(currentVitmap);
     //Vitmap* currentVitmap = &vitmapAnim.vitmaps[vitmapAnim.currentFrame];
     //Shape* currentShape = &currentVitmap->shapes[currentVitmap->numShapes];
     //Vitmap* currentVitmap = &vitmap;
     //Shape* currentShape = &currentVitmap->shapes[currentVitmap->numShapes - 1];
-    Shape* currentShape = &currentVitmap->shapes[currentVitmap->numShapes - 1];
-    // if (fileToLoad != NULL)
-    // {
-    //     Vitmap loadedVmp = loadVitmapFromFile(fileToLoad);
-    //     currentVitmap = &loadedVmp;
-    // }
+    Shape* currentShape = NULL;
+    if (fileToLoad != NULL)
+    {
+        Vitmap loadedVmp = loadVitmapFromFile(fileToLoad);
+        currentVitmap = &loadedVmp;
+    }
     
 
     int screenWidth = 1280;
@@ -546,6 +586,10 @@ int main(int argc, char *argv[])
         // {
         //     currentVitmap->numShapes--;
         // }
+        if (IsKeyPressed(KEY_P))
+        {
+            printVitmap(currentVitmap);
+        }
 
         // if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && isMouseInRect)
         // {
@@ -557,7 +601,10 @@ int main(int argc, char *argv[])
         //     PlaySound(clickSound);
         // }
 
-        currentShape->color = (Color){ColorPickerValue.r, ColorPickerValue.g, ColorPickerValue.b, 255};
+        if (currentShape != NULL)
+        {
+            currentShape->color = (Color){ColorPickerValue.r, ColorPickerValue.g, ColorPickerValue.b, 255};
+        }
 
 
         // Loop sliding sound
@@ -592,27 +639,30 @@ int main(int argc, char *argv[])
         }
 
         rlDisableBackfaceCulling();
-        drawVitmap(currentVitmap, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
-        //drawShape(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
-        if (isEditingShape)
+        if (currentShape != NULL)
         {
-            drawShapeOutline(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
+            drawVitmap(currentVitmap, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
+            //drawShape(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
+            if (isEditingShape)
+            {
+                drawShapeOutline(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
+            }
         }
         // rlEnableBackfaceCulling();
 
-        DrawText(TextFormat("pts: %d", currentShape->numPoints), 24, 456, 20, BLACK);
+        if (currentShape != NULL) DrawText(TextFormat("pts: %d", currentShape->numPoints), 24, 456, 20, BLACK);
         DrawText(TextFormat("mouse draw area pos: %f, %f", mouseDrawAreaPos.x, mouseDrawAreaPos.y), 24, 480, 20, BLACK);
 
         // raygui: controls drawing
         //----------------------------------------------------------------------------------
         if (GuiButton((Rectangle){24, 24, 120, 24}, "Save Vitmap..."))
         {
-            //SaveButton(currentVitmap, FilePathText);
+            SaveButton(currentVitmap, FilePathText);
             PlaySound(clickSound);
         }
         if (GuiButton((Rectangle){168, 24, 120, 24}, "Load Vitmap..."))
         {
-            //LoadButton(currentVitmap, FilePathText);
+            LoadButton(currentVitmap, FilePathText);
             PlaySound(clickSound);
         }
         if (GuiButton((Rectangle){24, 48, 120, 24}, "Save Animation..."))
@@ -702,7 +752,6 @@ static void SaveButton(Vitmap* vitmap, const char* name)
 }
 static void LoadButton(Vitmap* vitmapOut, const char* name)
 {
-    
     *vitmapOut = loadVitmapFromFile(name);
 }
 static void EncodeButton()
