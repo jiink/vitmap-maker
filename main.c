@@ -197,7 +197,7 @@ void drawTesselation(TESStesselator* tesselator, Color color)
 
 void drawShape(Shape *shape, Vector2 position, Vector2 scale)
 {
-    Vector2* points = (Vector2*)&shape->points;
+    Vector2* points = shape->points;
     int numPoints = shape->numPoints;
     Vector2* transformedPoints = calloc(numPoints, sizeof(Vector2));
     Color color = shape->color;
@@ -206,24 +206,42 @@ void drawShape(Shape *shape, Vector2 position, Vector2 scale)
         transformedPoints[i].x = position.x + points[i].x * scale.x;
         transformedPoints[i].y = position.y + points[i].y * scale.y;
     }
-    
-    DrawLineStrip(transformedPoints, numPoints, color);
-    DrawLineV(transformedPoints[numPoints], transformedPoints[0], color);
 
     TESStesselator *tesselator = tessNewTess(NULL);
     tessSetOption(tesselator, TESS_CONSTRAINED_DELAUNAY_TRIANGULATION, 1);
-    tessAddContour(tesselator, 2, transformedPoints, sizeof(Vector2), numPoints + 1);
+    tessAddContour(tesselator, 2, transformedPoints, sizeof(Vector2), numPoints);
     tessTesselate(tesselator, TESS_WINDING_ODD, TESS_POLYGONS, 3, 2, NULL);
     drawTesselation(tesselator, color);
     tessDeleteTess(tesselator);
     free(transformedPoints);
+
+    // DrawLineStrip(transformedPoints, numPoints, WHITE);
+    // DrawLineV(transformedPoints[numPoints - 1], transformedPoints[0], WHITE);
 }
+
+void drawShapeOutline(Shape* shape, Vector2 position, Vector2 scale)
+{
+    Vector2* points = shape->points;
+    int numPoints = shape->numPoints;
+    Vector2* transformedPoints = calloc(numPoints, sizeof(Vector2));
+    Color color = ColorFromHSV(GetTime() * 100, 1, 1);
+    for (int i = 0; i < numPoints; i++)
+    {
+        transformedPoints[i].x = position.x + points[i].x * scale.x;
+        transformedPoints[i].y = position.y + points[i].y * scale.y;
+    }
+    
+    DrawLineStrip(transformedPoints, numPoints, color);
+    DrawLineV(transformedPoints[numPoints-1], transformedPoints[0], color);
+    free(transformedPoints);
+}
+
 
 void drawVitmap(Vitmap *vitmap, Vector2 position, Vector2 scale)
 {
-    for (int i = 0; i < vitmap->numShapes + 1; i++)
+    for (int i = 0; i < vitmap->numShapes; i++)
     {
-        Shape *shape = &vitmap->shapes[i];
+        Shape* shape = &vitmap->shapes[i];
         drawShape(shape, position, scale);
     }
 }
@@ -373,22 +391,6 @@ Vitmap loadVitmapFromFile(const char* filename)
 //     return NULL;
 // }
 
-void drawShapeOutline(Shape* shape, Vector2 position, Vector2 scale)
-{
-    Vector2* points = shape->points;
-    int numPoints = shape->numPoints;
-    Vector2* transformedPoints = calloc(numPoints, sizeof(Vector2));
-    Color color = ColorFromHSV(GetTime() * 100, 1, 1);
-    for (int i = 0; i < numPoints; i++)
-    {
-        transformedPoints[i].x = position.x + points[i].x * scale.x;
-        transformedPoints[i].y = position.y + points[i].y * scale.y;
-    }
-    
-    DrawLineStrip(transformedPoints, numPoints, color);
-    DrawLineV(transformedPoints[numPoints-1], transformedPoints[0], color);
-    free(transformedPoints);
-}
 
 //------------------------------------------------------------------------------------
 // Program main entry point
@@ -472,7 +474,6 @@ int main(int argc, char *argv[])
         //currentVitmap = &vitmapAnim.vitmaps[vitmapAnim.currentFrame];
         //currentShape = &currentVitmap->shapes[currentVitmap->numShapes - 1];
 
-
         // Get mouse coords in drawingArea coords
         Vector2 mouseDrawAreaPos = 
         {
@@ -510,15 +511,6 @@ int main(int argc, char *argv[])
         );
         // ------------------------------------------------------------
 
-        // if (isMouseInRect)
-        // {
-        //     currentShape->points[currentShape->numPoints] = mouseSnappedPos;
-        // }
-        // else if (currentShape->numPoints > 1)
-        // {
-        //     currentShape->points[currentShape->numPoints] = currentShape->points[currentShape->numPoints - 1];
-        // }
-
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && isMouseInRect)
         {
             if (isEditingShape)
@@ -530,6 +522,7 @@ int main(int argc, char *argv[])
                 addShapeToVitmap(currentVitmap);
                 currentShape = &currentVitmap->shapes[currentVitmap->numShapes - 1];
                 isEditingShape = true;
+                addPointToShape(currentShape, mouseSnappedPos);
             }
             PlaySound(pressSound);
         }
@@ -599,8 +592,12 @@ int main(int argc, char *argv[])
         }
 
         rlDisableBackfaceCulling();
-        //drawVitmap(currentVitmap, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
-        drawShapeOutline(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
+        drawVitmap(currentVitmap, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
+        //drawShape(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
+        if (isEditingShape)
+        {
+            drawShapeOutline(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
+        }
         // rlEnableBackfaceCulling();
 
         DrawText(TextFormat("pts: %d", currentShape->numPoints), 24, 456, 20, BLACK);
