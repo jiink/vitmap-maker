@@ -246,12 +246,22 @@ void drawShape(Shape *shape, Vector2 position, Vector2 scale)
     // DrawLineV(transformedPoints[numPoints - 1], transformedPoints[0], WHITE);
 }
 
-void drawShapeOutline(Shape* shape, Vector2 position, Vector2 scale)
+void drawShapeOutline(Shape* shape, Vector2 position, Vector2 scale, int pattern)
 {
     Vector2* points = shape->points;
     int numPoints = shape->numPoints;
     Vector2* transformedPoints = calloc(numPoints, sizeof(Vector2));
-    Color color = ColorFromHSV(GetTime() * 100, 1, 1);
+    Color color = WHITE;
+    switch (pattern)
+    {
+        case 0:
+            color = ColorFromHSV(GetTime() * 100, 1, 1);
+            break;
+        case 1:
+            color = ColorFromHSV(0, 0, sinf(GetTime() * 10) * 0.4 + 0.5);
+            break;
+    }
+    
     for (int i = 0; i < numPoints; i++)
     {
         transformedPoints[i].x = position.x + points[i].x * scale.x;
@@ -484,7 +494,7 @@ int main(int argc, char *argv[])
     char FilePathText[128] = "MyVitmap.vmp";
     Color ColorPickerValue = {0, 0, 0, 0};
     Color BgGridColor = {50, 50, 50, 255};
-    float resolution = 2.0;
+    float resolution = 3.0;
 
     //----------------------------------------------------------------------------------
 
@@ -588,6 +598,7 @@ int main(int argc, char *argv[])
             if (shapeUnderMouse != NULL)
             {
                 currentShape = shapeUnderMouse;
+                ColorPickerValue = currentShape->color;
             }
             PlaySound(clickSound);
         }
@@ -636,7 +647,11 @@ int main(int argc, char *argv[])
             //drawShape(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
             if (isEditingShape)
             {
-                drawShapeOutline(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
+                drawShapeOutline(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y}, 0);
+            }
+            else
+            {
+                drawShapeOutline(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y}, 1);
             }
         }
         // rlEnableBackfaceCulling();
