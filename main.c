@@ -94,25 +94,35 @@ void initVitmapAnimationSet(VitmapAnimationSet* vitmapAnimationSet)
     vitmapAnimationSet->numAnimations = 0;
 }
 
+Shape* createShape()
+{
+    Shape* shape = (Shape*)malloc(sizeof(Shape));
+    if (shape == NULL) {
+        return NULL;
+    }
+    shape->numPoints = 0;
+    shape->color = (Color){0, 0, 0, 0};
+    return shape;
+}
+
 void addPointToShape(Shape* shape, Vector2 point)
 {
-	printf("adding point to shape. current count: %d\n", shape->numPoints);
+    printf("adding point to shape. current count: %d\n", shape->numPoints);
     shape->points = (Vector2*)realloc(shape->points, (shape->numPoints + 1) * sizeof(Vector2));
     shape->points[shape->numPoints] = point;
     shape->numPoints++;
-	printf("points in shape:\n");
-	for(int i = 0; i < shape->numPoints; i++)
-	{
-		printf("%f %f\n", shape->points[i].x, shape->points[i].y);
-	}
+    printf("points in shape:\n");
+    for(int i = 0; i < shape->numPoints; i++)
+    {
+        printf("%f %f\n", shape->points[i].x, shape->points[i].y);
+    }
 }
 
-Shape* addShapeToVitmap(Vitmap* vitmap, Shape shape)
+void addShapeToVitmap(Vitmap* vitmap, Shape shape)
 {
     vitmap->shapes = (Shape*)realloc(vitmap->shapes, (vitmap->numShapes + 1) * sizeof(Shape));
     vitmap->shapes[vitmap->numShapes] = shape;
     vitmap->numShapes++;
-	return &vitmap->shapes[vitmap->numShapes];
 }
 
 Vitmap* addVitmapToAnimation(VitmapAnimation* animation, Vitmap vitmap)
@@ -120,7 +130,7 @@ Vitmap* addVitmapToAnimation(VitmapAnimation* animation, Vitmap vitmap)
     animation->vitmaps = (Vitmap*)realloc(animation->vitmaps, (animation->numFrames + 1) * sizeof(Vitmap));
     animation->vitmaps[animation->numFrames] = vitmap;
     animation->numFrames++;
-	return &animation->vitmaps[animation->numFrames];
+    return &animation->vitmaps[animation->numFrames];
 }
 
 void drawTesselation(TESStesselator* tesselator, Color color)
@@ -173,7 +183,7 @@ void drawShape(Shape *shape, Vector2 position, Vector2 scale)
     tessTesselate(tesselator, TESS_WINDING_ODD, TESS_POLYGONS, 3, 2, NULL);
     drawTesselation(tesselator, color);
     tessDeleteTess(tesselator);
-	free(transformedPoints);
+    free(transformedPoints);
 }
 
 void drawVitmap(Vitmap *vitmap, Vector2 position, Vector2 scale)
@@ -344,7 +354,7 @@ void drawShapeOutline(Shape* shape, Vector2 position, Vector2 scale)
     
     DrawLineStrip(transformedPoints, numPoints, color);
     DrawLineV(transformedPoints[numPoints-1], transformedPoints[0], color);
-	free(transformedPoints);
+    free(transformedPoints);
 }
 
 //------------------------------------------------------------------------------------
@@ -368,17 +378,21 @@ int main(int argc, char *argv[])
     
     // VitmapAnimation vitmapAnim;
     // initVitmapAnimation(&vitmapAnim);
-	Shape shape;
-	initShape(&shape);
+    // Vitmap vitmap;
+    // initVitmap(&vitmap);
+    
+    //addShapeToVitmap(&vitmap, shape);
     //Vitmap* currentVitmap = &vitmapAnim.vitmaps[vitmapAnim.currentFrame];
     //Shape* currentShape = &currentVitmap->shapes[currentVitmap->numShapes];
-	Shape* currentShape = &shape;
+    //Vitmap* currentVitmap = &vitmap;
+    //Shape* currentShape = &currentVitmap->shapes[currentVitmap->numShapes - 1];
+    Shape* currentShape = createShape();
     // if (fileToLoad != NULL)
     // {
     //     Vitmap loadedVmp = loadVitmapFromFile(fileToLoad);
     //     currentVitmap = &loadedVmp;
     // }
-	
+    
 
     int screenWidth = 1280;
     int screenHeight = 720;
@@ -422,7 +436,7 @@ int main(int argc, char *argv[])
     {
         // Update
         //currentVitmap = &vitmapAnim.vitmaps[vitmapAnim.currentFrame];
-        //currentShape = &currentVitmap->shapes[currentVitmap->numShapes];
+        //currentShape = &currentVitmap->shapes[currentVitmap->numShapes - 1];
 
 
         // Get mouse coords in drawingArea coords
@@ -473,16 +487,16 @@ int main(int argc, char *argv[])
 
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && isMouseInRect)
         {
-			if (isEditingShape)
-			{
-				addPointToShape(currentShape, mouseSnappedPos);
-			}
-			else
-			{
-				//Shape newShape;
-				//addShapeToVitmap(currentVitmap, newShape);
-				isEditingShape = true;
-			}
+            if (isEditingShape)
+            {
+                addPointToShape(currentShape, mouseSnappedPos);
+            }
+            else
+            {
+                //Shape newShape;
+                //addShapeToVitmap(currentVitmap, newShape);
+                isEditingShape = true;
+            }
             PlaySound(pressSound);
         }
         // if (IsKeyPressed(KEY_BACKSPACE) && currentShape->numPoints > 0)
