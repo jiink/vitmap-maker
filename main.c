@@ -408,13 +408,14 @@ int main(int argc, char *argv[])
 
     
     Tool currentTool = TOOL_DRAW;
+    bool isEditingShape = false;
 
     // Main game loop
     while (!WindowShouldClose()) // Detect window close button or ESC key
     {
         // Update
-        Vitmap* currentVitmap = &vitmapAnim.vitmaps[vitmapAnim.currentFrame];
-        Shape* currentShape = &currentVitmap->shapes[currentVitmap->numShapes];
+        currentVitmap = &vitmapAnim.vitmaps[vitmapAnim.currentFrame];
+        currentShape = &currentVitmap->shapes[currentVitmap->numShapes];
 
         // Get mouse coords in drawingArea coords
         Vector2 mouseDrawAreaPos = 
@@ -467,16 +468,16 @@ int main(int argc, char *argv[])
             currentShape->numPoints++;
             PlaySound(pressSound);
         }
-        if (IsKeyPressed(KEY_BACKSPACE) && currentShape->numPoints > 0)
-        {
-            currentShape->numPoints--;
-        }
-        if (IsKeyPressed(KEY_ENTER) && currentVitmap->numShapes < MAX_SHAPES - 1)
-        {
-            currentVitmap->numShapes++;
-            currentShape = &currentVitmap->shapes[currentVitmap->numShapes];
-            PlaySound(snapSound);
-        }
+        // if (IsKeyPressed(KEY_BACKSPACE) && currentShape->numPoints > 0)
+        // {
+        //     currentShape->numPoints--;
+        // }
+        // if (IsKeyPressed(KEY_ENTER) && currentVitmap->numShapes < MAX_SHAPES - 1)
+        // {
+        //     currentVitmap->numShapes++;
+        //     currentShape = &currentVitmap->shapes[currentVitmap->numShapes];
+        //     PlaySound(snapSound);
+        // }
         if (IsKeyPressed(KEY_DELETE) && currentVitmap->numShapes > 0)
         {
             currentVitmap->numShapes--;
