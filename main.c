@@ -102,7 +102,19 @@ Shape* createShape()
     }
     shape->numPoints = 0;
     shape->color = (Color){0, 0, 0, 0};
+    shape->points = NULL;
     return shape;
+}
+
+Vitmap* createVitmap()
+{
+    Vitmap* vitmap = (Vitmap*)malloc(sizeof(Vitmap));
+    if (vitmap == NULL) {
+        return NULL;
+    }
+    vitmap->numShapes = 0;
+    vitmap->shapes = NULL;
+    return vitmap;
 }
 
 void addPointToShape(Shape* shape, Vector2 point)
@@ -118,11 +130,32 @@ void addPointToShape(Shape* shape, Vector2 point)
     }
 }
 
-void addShapeToVitmap(Vitmap* vitmap, Shape shape)
+void addShapeToVitmap(Vitmap* vitmap)
 {
-    vitmap->shapes = (Shape*)realloc(vitmap->shapes, (vitmap->numShapes + 1) * sizeof(Shape));
-    vitmap->shapes[vitmap->numShapes] = shape;
+    printf("Shapes pointer before: %p\n", vitmap->shapes);
+    // Increment the number of shapes in the vitmap
     vitmap->numShapes++;
+  
+    // Reallocate memory for the shapes array to accommodate the new shape
+    Shape* newShapes = (Shape*)realloc(vitmap->shapes, vitmap->numShapes * sizeof(Shape));
+    if (newShapes == NULL) {
+        // Handle allocation failure
+        vitmap->numShapes = 0; // Reset the number of shapes
+        return;
+    }
+  
+    vitmap->shapes = newShapes; // Update the pointer to the reallocated memory
+  
+    // Create the new shape using createShape function
+    Shape* newShape = createShape();
+    if (newShape == NULL) {
+        // Handle creation failure
+        vitmap->numShapes--; // Decrement the number of shapes
+        return;
+    }
+  
+    // Add the new shape to the shapes array
+    vitmap->shapes[vitmap->numShapes - 1] = *newShape;
 }
 
 Vitmap* addVitmapToAnimation(VitmapAnimation* animation, Vitmap vitmap)
@@ -378,15 +411,16 @@ int main(int argc, char *argv[])
     
     // VitmapAnimation vitmapAnim;
     // initVitmapAnimation(&vitmapAnim);
-    // Vitmap vitmap;
-    // initVitmap(&vitmap);
+    
     
     //addShapeToVitmap(&vitmap, shape);
+    Vitmap* currentVitmap = createVitmap();
+    addShapeToVitmap(currentVitmap);
     //Vitmap* currentVitmap = &vitmapAnim.vitmaps[vitmapAnim.currentFrame];
     //Shape* currentShape = &currentVitmap->shapes[currentVitmap->numShapes];
     //Vitmap* currentVitmap = &vitmap;
     //Shape* currentShape = &currentVitmap->shapes[currentVitmap->numShapes - 1];
-    Shape* currentShape = createShape();
+    Shape* currentShape = &currentVitmap->shapes[currentVitmap->numShapes - 1];
     // if (fileToLoad != NULL)
     // {
     //     Vitmap loadedVmp = loadVitmapFromFile(fileToLoad);
@@ -476,14 +510,14 @@ int main(int argc, char *argv[])
         );
         // ------------------------------------------------------------
 
-        if (isMouseInRect)
-        {
-            currentShape->points[currentShape->numPoints] = mouseSnappedPos;
-        }
-        else if (currentShape->numPoints > 1)
-        {
-            currentShape->points[currentShape->numPoints] = currentShape->points[currentShape->numPoints - 1];
-        }
+        // if (isMouseInRect)
+        // {
+        //     currentShape->points[currentShape->numPoints] = mouseSnappedPos;
+        // }
+        // else if (currentShape->numPoints > 1)
+        // {
+        //     currentShape->points[currentShape->numPoints] = currentShape->points[currentShape->numPoints - 1];
+        // }
 
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && isMouseInRect)
         {
@@ -493,11 +527,17 @@ int main(int argc, char *argv[])
             }
             else
             {
-                //Shape newShape;
-                //addShapeToVitmap(currentVitmap, newShape);
+                addShapeToVitmap(currentVitmap);
+                currentShape = &currentVitmap->shapes[currentVitmap->numShapes - 1];
                 isEditingShape = true;
             }
             PlaySound(pressSound);
+        }
+
+        // Drop it
+        if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && isMouseInRect)
+        {
+            isEditingShape = false;
         }
         // if (IsKeyPressed(KEY_BACKSPACE) && currentShape->numPoints > 0)
         // {
