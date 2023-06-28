@@ -379,57 +379,58 @@ Vitmap loadVitmapFromFile(const char* filename)
     return vitmap;
 }
 
-// int getShapesUnderPos(Vitmap* vitmap, Vector2 pos, Shape* shapesUnderMouseOut[MAX_SHAPES])
-// {
-//     int shapesUnderMouseIndex = 0;
-//     for (int i = 0; i < vitmap->numShapes; i++)
-//     {
-//         int numVerts = vitmap->shapes[i].numPoints + 1;
-//         float xVerts[MAX_POINTS];
-//         float yVerts[MAX_POINTS];
-//         for (int j = 0; j < numVerts; j++)
-//         {
-//             xVerts[j] = vitmap->shapes[i].points[j].x;
-//             yVerts[j] = vitmap->shapes[i].points[j].y;
-//         }
-//         if (isPointInPoly(numVerts, xVerts, yVerts, pos.x, pos.y))
-//         {
-//             shapesUnderMouseOut[shapesUnderMouseIndex] = &vitmap->shapes[i];
-//             shapesUnderMouseIndex++;
-//         }
-//     }
-//     int shapesFound = shapesUnderMouseIndex;
-//     return shapesFound;
-// }
+int getShapesUnderPos(Vitmap* vitmap, Vector2 pos, Shape* shapesUnderMouseOut[111])
+{
+    int shapesUnderMouseIndex = 0;
+    for (int i = 0; i < vitmap->numShapes; i++)
+    {
+        int numVerts = vitmap->shapes[i].numPoints + 1;
+        float* xVerts = calloc(numVerts, sizeof(float));
+        float* yVerts = calloc(numVerts, sizeof(float));
+        for (int j = 0; j < numVerts; j++)
+        {
+            xVerts[j] = vitmap->shapes[i].points[j].x;
+            yVerts[j] = vitmap->shapes[i].points[j].y;
+        }
+        if (isPointInPoly(numVerts, xVerts, yVerts, pos.x, pos.y))
+        {
+            shapesUnderMouseOut[shapesUnderMouseIndex] = &vitmap->shapes[i];
+            shapesUnderMouseIndex++;
+        }
+    }
+    int shapesFound = shapesUnderMouseIndex;
+    return shapesFound;
+}
 
-// Shape* getShapeUnderPos(Vitmap* vitmap, Vector2 pos)
-// {
-//     Shape* shapesUnderPos[MAX_SHAPES];
-//     // initialize them to null
-//     for (int i = 0; i < MAX_SHAPES; i++)
-//     {
-//         shapesUnderPos[i] = NULL;
-//     }
-//     getShapesUnderPos(vitmap, pos, shapesUnderPos);
-//     // print out the results
-//     for (int i = 0; i < MAX_SHAPES; i++)
-//     {
-//         if (shapesUnderPos[i] != NULL)
-//         {
-//             printf("Shape %x is under the mouse!\n", shapesUnderPos[i]);
-//         }
-//     }
-//     // Find and return the one on top (The last one in the array)
-//     for (int i = MAX_SHAPES - 1; i >= 0; i--)
-//     {
-//         if (shapesUnderPos[i] != NULL)
-//         {
-//             return shapesUnderPos[i];
-//         }
-//     }
-//     printf("No shapes here.\n");
-//     return NULL;
-// }
+Shape* getShapeUnderPos(Vitmap* vitmap, Vector2 pos)
+{
+    const int max_shapes = 111;
+    Shape* shapesUnderPos[max_shapes];
+    // initialize them to null
+    for (int i = 0; i < max_shapes; i++)
+    {
+        shapesUnderPos[i] = NULL;
+    }
+    getShapesUnderPos(vitmap, pos, shapesUnderPos);
+    // print out the results
+    for (int i = 0; i < max_shapes; i++)
+    {
+        if (shapesUnderPos[i] != NULL)
+        {
+            printf("Shape %x is under the mouse!\n", shapesUnderPos[i]);
+        }
+    }
+    // Find and return the one on top (The last one in the array)
+    for (int i = max_shapes - 1; i >= 0; i--)
+    {
+        if (shapesUnderPos[i] != NULL)
+        {
+            return shapesUnderPos[i];
+        }
+    }
+    printf("No shapes here.\n");
+    return NULL;
+}
 
 
 //------------------------------------------------------------------------------------
@@ -451,17 +452,7 @@ int main(int argc, char *argv[])
     Vector2 gridSize = {16, 16};
     Rectangle drawingArea = {424, 40, 592, 592};
     
-    // VitmapAnimation vitmapAnim;
-    // initVitmapAnimation(&vitmapAnim);
-    
-    
-    //addShapeToVitmap(&vitmap, shape);
     Vitmap* currentVitmap = createVitmap();
-    //addShapeToVitmap(currentVitmap);
-    //Vitmap* currentVitmap = &vitmapAnim.vitmaps[vitmapAnim.currentFrame];
-    //Shape* currentShape = &currentVitmap->shapes[currentVitmap->numShapes];
-    //Vitmap* currentVitmap = &vitmap;
-    //Shape* currentShape = &currentVitmap->shapes[currentVitmap->numShapes - 1];
     Shape* currentShape = NULL;
     if (fileToLoad != NULL)
     {
@@ -591,15 +582,15 @@ int main(int argc, char *argv[])
             printVitmap(currentVitmap);
         }
 
-        // if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && isMouseInRect)
-        // {
-        //     Shape* shapeUnderMouse = getShapeUnderPos(currentVitmap, mouseDrawAreaPos);
-        //     if (shapeUnderMouse != NULL)
-        //     {
-        //         currentShape = shapeUnderMouse;
-        //     }
-        //     PlaySound(clickSound);
-        // }
+        if (IsKeyPressed(KEY_E) && isMouseInRect)
+        {
+            Shape* shapeUnderMouse = getShapeUnderPos(currentVitmap, mouseDrawAreaPos);
+            if (shapeUnderMouse != NULL)
+            {
+                currentShape = shapeUnderMouse;
+            }
+            PlaySound(clickSound);
+        }
 
         if (currentShape != NULL)
         {
