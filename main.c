@@ -12,6 +12,7 @@ typedef enum Tool
 {
     TOOL_DRAW,
     TOOL_SELECT,
+    TOOL_EDIT,
     TOOL_ERASE,
     TOOL_PAN,
     TOOL_MAX
@@ -50,6 +51,11 @@ typedef struct VitmapAnimationSet
     VitmapAnimation* animations;
     int numAnimations;
 } VitmapAnimationSet;
+
+// Variable definitions
+
+Vector2 gridSize = {16, 16};
+Rectangle drawingArea = {424, 40, 592, 592};
 
 //----------------------------------------------------------------------------------
 // Controls Functions Declaration
@@ -283,6 +289,14 @@ void drawVitmap(Vitmap *vitmap, Vector2 position, Vector2 scale)
     }
 }
 
+void drawPlus(Vector2 position)
+{
+    DrawLineV((Vector2){position.x - 10, position.y}, (Vector2){position.x + 10, position.y}, WHITE);
+    DrawLineV((Vector2){position.x, position.y - 10}, (Vector2){position.x, position.y + 10}, WHITE);
+    DrawLineV((Vector2){position.x - 9, position.y + 1}, (Vector2){position.x + 9, position.y + 1}, BLACK);
+    DrawLineV((Vector2){position.x + 1, position.y - 9}, (Vector2){position.x + 1, position.y + 9}, BLACK);
+}
+
 float clamp(float value, float min, float max)
 {
     if (value < min)
@@ -442,6 +456,24 @@ Shape* getShapeUnderPos(Vitmap* vitmap, Vector2 pos)
     return NULL;
 }
 
+Vector2 vector2Transform(Vector2 input, Vector2 pos, Vector2 scale)
+{
+    Vector2 output = {0.0f, 0.0f};
+    output.x = pos.x + input.x * scale.x;
+    output.y = pos.y + input.y * scale.y;
+    return output;
+}
+
+Vector2 vitToScreenCoord(Vector2 vitSpaceCoord)
+{
+    return vector2Transform(vitSpaceCoord, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
+}
+
+bool checkCollisionPointCircle(Vector2 point, Vector2 center, float radius)
+{
+    return (point.x - center.x) * (point.x - center.x) + (point.y - center.y) * (point.y - center.y) < radius * radius;
+}
+
 
 //------------------------------------------------------------------------------------
 // Program main entry point
@@ -459,8 +491,7 @@ int main(int argc, char *argv[])
     // Initialization
     //---------------------------------------------------------------------------------------
 
-    Vector2 gridSize = {16, 16};
-    Rectangle drawingArea = {424, 40, 592, 592};
+    
     
     Vitmap* currentVitmap = createVitmap();
     Shape* currentShape = NULL;
@@ -551,28 +582,7 @@ int main(int argc, char *argv[])
             realVol
         );
         // ------------------------------------------------------------
-
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && isMouseInRect)
-        {
-            if (isEditingShape)
-            {
-                addPointToShape(currentShape, mouseSnappedPos);
-            }
-            else
-            {
-                addShapeToVitmap(currentVitmap);
-                currentShape = &currentVitmap->shapes[currentVitmap->numShapes - 1];
-                isEditingShape = true;
-                addPointToShape(currentShape, mouseSnappedPos);
-            }
-            PlaySound(pressSound);
-        }
-
-        // Drop it
-        if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && isMouseInRect)
-        {
-            isEditingShape = false;
-        }
+        
         // if (IsKeyPressed(KEY_BACKSPACE) && currentShape->numPoints > 0)
         // {
         //     currentShape->numPoints--;
@@ -592,16 +602,7 @@ int main(int argc, char *argv[])
             printVitmap(currentVitmap);
         }
 
-        if (IsKeyPressed(KEY_E) && isMouseInRect)
-        {
-            Shape* shapeUnderMouse = getShapeUnderPos(currentVitmap, mouseDrawAreaPos);
-            if (shapeUnderMouse != NULL)
-            {
-                currentShape = shapeUnderMouse;
-                ColorPickerValue = currentShape->color;
-            }
-            PlaySound(clickSound);
-        }
+        
 
         if (currentShape != NULL)
         {
@@ -693,7 +694,7 @@ int main(int argc, char *argv[])
         }
         if (GuiTextBox((Rectangle){24, 4, 336, 20}, FilePathText, 128, FilePathEditMode))
             FilePathEditMode = !FilePathEditMode;
-        currentTool = GuiToggleGroup((Rectangle){240, 120, 40, 24}, "DRAW;SELECT;ERASE;PAN", currentTool);
+        currentTool = GuiToggleGroup((Rectangle){240, 120, 40, 24}, "DRAW;SELECT;EDIT;ERASE;PAN", currentTool);
         if (GuiLabelButton((Rectangle){240, 96, 120, 24}, "Modes"))
         {
             LabelButton007();
@@ -719,6 +720,79 @@ int main(int argc, char *argv[])
         // {
         //     vitmapAnim.numFrames++;
         // }
+
+        
+        switch (currentTool)
+        {
+            case TOOL_DRAW:
+                if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && isMouseInRect)
+                {
+                    if (isEditingShape)
+                    {
+                        addPointToShape(currentShape, mouseSnappedPos);
+                    }
+                    else
+                    {
+                        addShapeToVitmap(currentVitmap);
+                        currentShape = &currentVitmap->shapes[currentVitmap->numShapes - 1];
+                        isEditingShape = true;
+                        addPointToShape(currentShape, mouseSnappedPos);
+                    }
+                    PlaySound(pressSound);
+                }
+                // Drop it
+                if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && isMouseInRect)
+                {
+                    isEditingShape = false;
+                }
+                drawPlus(vitToScreenCoord(mouseSnappedPos));
+                break;
+            case TOOL_SELECT:
+                if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && isMouseInRect)
+                {
+                    Shape* shapeUnderMouse = getShapeUnderPos(currentVitmap, mouseDrawAreaPos);
+                    if (shapeUnderMouse != NULL)
+                    {
+                        currentShape = shapeUnderMouse;
+                        ColorPickerValue = currentShape->color;
+                    }
+                    PlaySound(clickSound);
+                }
+                break;
+            case TOOL_EDIT:
+                // Draw a dot at each vertex of the current shape
+                if (currentShape != NULL)
+                {
+                    for (int i = 0; i < currentShape->numPoints; i++)
+                    {
+                        Vector2 point = currentShape->points[i];
+                        DrawCircle(
+                            drawingArea.x + (point.x * drawingArea.width / gridSize.x),
+                            drawingArea.y + (point.y * drawingArea.height / gridSize.y),
+                            2.0,
+                            GREEN
+                        );
+                    }
+                }
+                // Click near a dot and drag it to change its position
+                if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && isMouseInRect)
+                {
+                    if (currentShape != NULL)
+                    {
+                        for (int i = 0; i < currentShape->numPoints; i++)
+                        {
+                            Vector2 point = currentShape->points[i];
+                            if (checkCollisionPointCircle(mouseDrawAreaPos, point, 1.0))
+                            {
+                                currentShape->points[i] = mouseSnappedPos;
+                                break;
+                            }
+                        }
+                    }
+                }
+                break;
+        }
+
 
         DrawText(TextFormat("Resolution: %i", realResolution), 60, 330, 20, WHITE);
         DrawText(TextFormat("Slide volume: %f", targetVol), 60, 360, 20, WHITE);
