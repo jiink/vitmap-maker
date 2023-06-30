@@ -282,7 +282,6 @@ void processTool(Tool currentTool, Vector2 mouseDrawAreaPos)
     switch (currentTool)
     {
         case TOOL_DRAW:
-            //currentShape->color = (Color){ColorPickerValue.r, ColorPickerValue.g, ColorPickerValue.b, 255};
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !IsKeyDown(KEY_LEFT_SHIFT))
             {
                 if (isDrawingShape)
@@ -330,18 +329,6 @@ void processTool(Tool currentTool, Vector2 mouseDrawAreaPos)
                     }
                 }
             }
-            break;
-        case TOOL_SELECT:
-            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-            {
-                Shape* shapeUnderMouse = getShapeUnderPos(currentVitmap, mouseDrawAreaPos);
-                if (shapeUnderMouse != NULL)
-                {
-                    currentShape = shapeUnderMouse;
-                    ColorPickerValue = currentShape->color;
-                }
-                PlaySound(clickSound);
-            }
             // Press arrow up or arrow down to reorder the shape in the vitmap
             if (IsKeyPressed(KEY_UP))
             {
@@ -362,7 +349,18 @@ void processTool(Tool currentTool, Vector2 mouseDrawAreaPos)
                     currentShape = reorderShapeInVitmap(currentVitmap, currentShape, -1);
                     //printf("Currentshape after: %x\n", currentShape);
                 }
-            }            
+            }    
+            // Right click while not drawing a shape to select a different one
+            if (!isDrawingShape && IsMouseButtonPressed(MOUSE_RIGHT_BUTTON))
+            {
+                Shape* shapeUnderMouse = getShapeUnderPos(currentVitmap, mouseDrawAreaPos);
+                if (shapeUnderMouse != NULL)
+                {
+                    currentShape = shapeUnderMouse;
+                    ColorPickerValue = currentShape->color;
+                }
+                PlaySound(clickSound);
+            }        
             // Press delete to delete the current shape
             if (IsKeyPressed(KEY_DELETE))
             {
@@ -372,6 +370,9 @@ void processTool(Tool currentTool, Vector2 mouseDrawAreaPos)
                     currentShape = NULL;
                 }
             }
+            break;
+        case TOOL_SELECT:
+            
             break;
         case TOOL_EDIT:
         {
@@ -669,6 +670,10 @@ int main(int argc, char *argv[])
         if (isMouseInRect)
         {
             processTool(currentTool, mouseDrawAreaPos);
+        }
+        if (currentShape != NULL)
+        {
+            currentShape->color = (Color){ColorPickerValue.r, ColorPickerValue.g, ColorPickerValue.b, 255};
         }
 
         drawOverlayImg(overlayImg, drawingArea, 0.2f);
