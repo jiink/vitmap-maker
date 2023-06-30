@@ -68,7 +68,6 @@ bool isPointInPoly(int nvert, float *vertx, float *verty, float testx, float tes
     return c;
 }
 
-
 void drawTesselation(TESStesselator* tesselator, Color color)
 {
     //int vertexCount = tessGetVertexCount(tesselator);
@@ -192,7 +191,7 @@ int getShapesUnderPos(Vitmap* vitmap, Vector2 pos, Shape* shapesUnderMouseOut[11
     int shapesUnderMouseIndex = 0;
     for (int i = 0; i < vitmap->numShapes; i++)
     {
-        int numVerts = vitmap->shapes[i].numPoints + 1;
+        int numVerts = vitmap->shapes[i].numPoints;
         float* xVerts = calloc(numVerts, sizeof(float));
         float* yVerts = calloc(numVerts, sizeof(float));
         for (int j = 0; j < numVerts; j++)
@@ -221,13 +220,13 @@ Shape* getShapeUnderPos(Vitmap* vitmap, Vector2 pos)
     }
     getShapesUnderPos(vitmap, pos, shapesUnderPos);
     // print out the results
-    for (int i = 0; i < max_shapes; i++)
-    {
-        if (shapesUnderPos[i] != NULL)
-        {
-            printf("Shape %x is under the mouse!\n", shapesUnderPos[i]);
-        }
-    }
+    // for (int i = 0; i < max_shapes; i++)
+    // {
+    //     if (shapesUnderPos[i] != NULL)
+    //     {
+    //         printf("Shape %x is under the mouse!\n", shapesUnderPos[i]);
+    //     }
+    // }
     // Find and return the one on top (The last one in the array)
     for (int i = max_shapes - 1; i >= 0; i--)
     {
