@@ -45,13 +45,14 @@ Sound snapSound;
 Sound slidingSound;
 
 Color ColorPickerValue = {0, 0, 0, 0};
+Texture2D overlayImg;
 
 //----------------------------------------------------------------------------------
 // Controls Functions Declaration
 //----------------------------------------------------------------------------------
 static void SaveButton(Vitmap* vitmap, const char* name);
 static void LoadButton(Vitmap* vitmapOut, const char* name);
-static void EncodeButton();
+static void LoadOverlay(char* filePath);
 static void DecodeButton();
 static void LabelButton007();
 
@@ -394,6 +395,15 @@ void processTool(Tool currentTool, Vector2 mouseDrawAreaPos)
     }
 }
 
+void drawOverlayImg(Texture2D img, Rectangle destination, float alpha)
+{
+    if (!IsTextureReady(img))
+    {
+        return;
+    }
+    DrawTexturePro(img, (Rectangle){0, 0, img.width, img.height}, destination, (Vector2){0, 0}, 0, Fade(WHITE, alpha));
+}
+
 //------------------------------------------------------------------------------------
 // Program main entry point
 //------------------------------------------------------------------------------------
@@ -439,6 +449,8 @@ int main(int argc, char *argv[])
     //----------------------------------------------------------------------------------
     bool FilePathEditMode = false;
     char FilePathText[128] = "MyVitmap.vmp";
+    bool OverlayImgPathEditMode = false;
+    char OverlayImgPathText[128] = "overlay.png";
     Color BgGridColor = {50, 50, 50, 255};
     float resolution = 3.0;
 
@@ -586,18 +598,15 @@ int main(int argc, char *argv[])
             
             PlaySound(clickSound);
         }
-        if (GuiButton((Rectangle){24, 408, 120, 24}, "Encode"))
+        if (GuiButton((Rectangle){24, 408, 120, 24}, "Load Overlay"))
         {
-            EncodeButton();
-            PlaySound(clickSound);
-        }
-        if (GuiButton((Rectangle){168, 408, 120, 24}, "Decode"))
-        {
-            DecodeButton();
+            LoadOverlay(OverlayImgPathText);
             PlaySound(clickSound);
         }
         if (GuiTextBox((Rectangle){24, 4, 336, 20}, FilePathText, 128, FilePathEditMode))
             FilePathEditMode = !FilePathEditMode;
+        if (GuiTextBox((Rectangle){24, 432, 336, 20}, OverlayImgPathText, 128, OverlayImgPathEditMode))
+            OverlayImgPathEditMode = !OverlayImgPathEditMode;
         currentTool = GuiToggleGroup((Rectangle){240, 120, 40, 24}, "DRAW;SELECT;EDIT;ERASE;PAN", currentTool);
         if (GuiLabelButton((Rectangle){240, 96, 120, 24}, "Modes"))
         {
@@ -630,6 +639,7 @@ int main(int argc, char *argv[])
             processTool(currentTool, mouseDrawAreaPos);
         }
 
+        drawOverlayImg(overlayImg, drawingArea, 0.2f);
 
         DrawText(TextFormat("Resolution: %i", realResolution), 60, 330, 20, WHITE);
         DrawText(TextFormat("Slide volume: %f", targetVol), 60, 360, 20, WHITE);
@@ -671,9 +681,9 @@ static void LoadButton(Vitmap* vitmapOut, const char* name)
 {
     *vitmapOut = loadVitmapFromFile(name);
 }
-static void EncodeButton()
+static void LoadOverlay(char* filePath)
 {
-    // TODO: Implement control logic
+    overlayImg = LoadTexture(filePath);
 }
 static void DecodeButton()
 {
