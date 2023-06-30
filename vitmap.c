@@ -168,6 +168,40 @@ void removeShapeFromVitmap(Vitmap* vitmap, Shape* shape)
     vitmap->shapes = (Shape*)realloc(vitmap->shapes, vitmap->numShapes * sizeof(Shape));
 }
 
+// Returns a pointer to the new location of where your shape is at
+Shape* reorderShapeInVitmap(Vitmap* vitmap, Shape* shape, int direction)
+{
+    // Swap pointers with the shape before or after it in the vitmap's shape list
+    int index = -1;
+    for (int i = 0; i < vitmap->numShapes; i++)
+    {
+        if (&vitmap->shapes[i] == shape)
+        {
+            index = i;
+            break;
+        }
+    }
+    if (index == -1)
+    {
+        return shape;
+    }
+    if (direction == 1 && index < vitmap->numShapes - 1)
+    {
+        Shape temp = vitmap->shapes[index];
+        vitmap->shapes[index] = vitmap->shapes[index + 1];
+        vitmap->shapes[index + 1] = temp;
+        return &vitmap->shapes[index + 1];
+    }
+    else if (direction == -1 && index > 0)
+    {
+        Shape temp = vitmap->shapes[index];
+        vitmap->shapes[index] = vitmap->shapes[index - 1];
+        vitmap->shapes[index - 1] = temp;
+        return &vitmap->shapes[index - 1];
+    }
+    return shape;
+}
+
 Vitmap* addVitmapToAnimation(VitmapAnimation* animation, Vitmap vitmap)
 {
     animation->vitmaps = (Vitmap*)realloc(animation->vitmaps, (animation->numFrames + 1) * sizeof(Vitmap));

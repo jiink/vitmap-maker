@@ -44,7 +44,7 @@ Sound pressSound;
 Sound snapSound; 
 Sound slidingSound;
 
-Color ColorPickerValue = {0, 0, 0, 0};
+Color ColorPickerValue = {200, 170, 90, 0};
 Texture2D overlayImg;
 
 //----------------------------------------------------------------------------------
@@ -257,7 +257,7 @@ void drawVertexHandle(Vector2 pos, float size, bool inProximity)
 {
     if (inProximity)
     {
-        DrawCircleV(pos, cosf(GetTime() * 10) * (size * 0.5f) + size, GREEN);
+        DrawCircleV(pos, cosf(GetTime() * 10) * (size * 0.5f) + size, WHITE);
         DrawCircleV(pos, sinf(GetTime() * 10) * (size * 0.5f) + size, BLACK);
     }
     else
@@ -282,6 +282,7 @@ void processTool(Tool currentTool, Vector2 mouseDrawAreaPos)
     switch (currentTool)
     {
         case TOOL_DRAW:
+            //currentShape->color = (Color){ColorPickerValue.r, ColorPickerValue.g, ColorPickerValue.b, 255};
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !IsKeyDown(KEY_LEFT_SHIFT))
             {
                 if (isDrawingShape)
@@ -341,6 +342,27 @@ void processTool(Tool currentTool, Vector2 mouseDrawAreaPos)
                 }
                 PlaySound(clickSound);
             }
+            // Press arrow up or arrow down to reorder the shape in the vitmap
+            if (IsKeyPressed(KEY_UP))
+            {
+                if (currentShape != NULL)
+                {
+                    // printf("--------------------\n");
+                    // printf("Currentshape before: %x\n", currentShape);
+                    currentShape = reorderShapeInVitmap(currentVitmap, currentShape, 1);
+                    //printf("Currentshape after: %x\n", currentShape);
+                }
+            }
+            if (IsKeyPressed(KEY_DOWN))
+            {
+                if (currentShape != NULL)
+                {
+                    // printf("--------------------\n");
+                    // printf("Currentshape before: %x\n", currentShape);
+                    currentShape = reorderShapeInVitmap(currentVitmap, currentShape, -1);
+                    //printf("Currentshape after: %x\n", currentShape);
+                }
+            }            
             // Press delete to delete the current shape
             if (IsKeyPressed(KEY_DELETE))
             {
@@ -362,6 +384,7 @@ void processTool(Tool currentTool, Vector2 mouseDrawAreaPos)
                     float dist = Vector2Distance(mouseDrawAreaPos, point);
                     drawVertexHandle(vitToScreenCoord(point), 5.0f - dist * 2.0f, dist < proxDistance);
                 }
+                currentShape->color = (Color){ColorPickerValue.r, ColorPickerValue.g, ColorPickerValue.b, 255};
             }
             // Click near a dot and drag it to change its position
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
@@ -397,7 +420,7 @@ void processTool(Tool currentTool, Vector2 mouseDrawAreaPos)
             }
             if (currentVertex != NULL)
             {
-                DrawCircleV(vitToScreenCoord(*currentVertex), 4, RED);
+               DrawCircleV(vitToScreenCoord(*currentVertex), 4, RED);
             }
             break;
         }
@@ -530,10 +553,7 @@ int main(int argc, char *argv[])
             printVitmap(currentVitmap);
         }
 
-        if (currentShape != NULL)
-        {
-            currentShape->color = (Color){ColorPickerValue.r, ColorPickerValue.g, ColorPickerValue.b, 255};
-        }
+        
 
         // Loop sliding sound
         if (!IsSoundPlaying(slidingSound)) PlaySound(slidingSound);
