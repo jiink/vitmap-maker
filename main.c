@@ -13,7 +13,7 @@
 typedef enum Tool
 {
     TOOL_DRAW,
-    TOOL_SELECT,
+    TOOL_EYEDROPPER,
     TOOL_EDIT,
     TOOL_ERASE,
     TOOL_PAN,
@@ -22,7 +22,7 @@ typedef enum Tool
 
 const char* toolNames[TOOL_MAX] = {
     "Draw",
-    "Select",
+    "Eyedropper",
     "Erase",
     "Pan"
 };
@@ -298,9 +298,15 @@ void processTool(Tool currentTool, Vector2 mouseDrawAreaPos)
                 PlaySound(pressSound);
             }
             // Drop it
-            if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON))
+            if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && isDrawingShape)
             {
                 isDrawingShape = false;
+            }
+            // Press middlemouse to deselect shape
+            if (IsMouseButtonPressed(MOUSE_MIDDLE_BUTTON))
+            {
+                isDrawingShape = false;
+                currentShape = NULL;
             }
             drawPlus(vitToScreenCoord(mouseSnappedPos));
             // See verts when holding shift
@@ -371,9 +377,18 @@ void processTool(Tool currentTool, Vector2 mouseDrawAreaPos)
                 }
             }
             break;
-        case TOOL_SELECT:
-            
+        case TOOL_EYEDROPPER:
+        {
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+            {
+                Shape* shapeToGetColorFrom = getShapeUnderPos(currentVitmap, mouseDrawAreaPos);
+                if (shapeToGetColorFrom != NULL)
+                {
+                    ColorPickerValue = shapeToGetColorFrom->color;
+                }
+            }
             break;
+        }
         case TOOL_EDIT:
         {
             // Draw a dot at each vertex of the current shape
@@ -485,7 +500,7 @@ int main(int argc, char *argv[])
     bool OverlayImgPathEditMode = false;
     char OverlayImgPathText[128] = "overlay.png";
     Color BgGridColor = {50, 50, 50, 255};
-    float resolution = 3.0;
+    float resolution = 4.0;
 
     //----------------------------------------------------------------------------------
 
@@ -640,7 +655,7 @@ int main(int argc, char *argv[])
             FilePathEditMode = !FilePathEditMode;
         if (GuiTextBox((Rectangle){24, 432, 336, 20}, OverlayImgPathText, 128, OverlayImgPathEditMode))
             OverlayImgPathEditMode = !OverlayImgPathEditMode;
-        currentTool = GuiToggleGroup((Rectangle){240, 120, 40, 24}, "DRAW;SELECT;EDIT;ERASE;PAN", currentTool);
+        currentTool = GuiToggleGroup((Rectangle){240, 120, 40, 24}, "DRAW;EYEDROPPER;EDIT;ERASE;PAN", currentTool);
         if (GuiLabelButton((Rectangle){240, 96, 120, 24}, "Modes"))
         {
             LabelButton007();
