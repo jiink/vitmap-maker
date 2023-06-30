@@ -567,10 +567,13 @@ int main(int argc, char *argv[])
         }
 
         rlDisableBackfaceCulling();
-        if (currentShape != NULL)
+        if (currentVitmap != NULL)
         {
             drawVitmap(currentVitmap, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
+        }
             //drawShape(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
+        if (currentShape != NULL)
+        {
             if (isDrawingShape)
             {
                 drawShapeOutline(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y}, 0);
