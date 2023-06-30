@@ -341,6 +341,15 @@ void processTool(Tool currentTool, Vector2 mouseDrawAreaPos)
                 }
                 PlaySound(clickSound);
             }
+            // Press delete to delete the current shape
+            if (IsKeyPressed(KEY_DELETE))
+            {
+                if (currentShape != NULL)
+                {
+                    removeShapeFromVitmap(currentVitmap, currentShape);
+                    currentShape = NULL;
+                }
+            }
             break;
         case TOOL_EDIT:
         {

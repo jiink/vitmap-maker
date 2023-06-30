@@ -142,6 +142,32 @@ void addShapeToVitmap(Vitmap* vitmap)
     vitmap->shapes[vitmap->numShapes - 1] = *newShape;
 }
 
+void removeShapeFromVitmap(Vitmap* vitmap, Shape* shape)
+{
+    // See if vitmap has this shape
+    int index = -1;
+    for (int i = 0; i < vitmap->numShapes; i++)
+    {
+        if (&vitmap->shapes[i] == shape)
+        {
+            index = i;
+            break;
+        }
+    }
+    if (index == -1)
+    {
+        return;
+    }
+    // Remove the shape
+    for (int i = index; i < vitmap->numShapes - 1; i++)
+    {
+        vitmap->shapes[i] = vitmap->shapes[i + 1];
+    }
+    vitmap->numShapes--;
+    // Reallocate memory
+    vitmap->shapes = (Shape*)realloc(vitmap->shapes, vitmap->numShapes * sizeof(Shape));
+}
+
 Vitmap* addVitmapToAnimation(VitmapAnimation* animation, Vitmap vitmap)
 {
     animation->vitmaps = (Vitmap*)realloc(animation->vitmaps, (animation->numFrames + 1) * sizeof(Vitmap));
