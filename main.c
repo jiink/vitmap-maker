@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include "include/raylib.h"
+#include "include/raymath.h"
 #include "include/raygui.h"
 #include "include/tesselator.h"
 #include "vitmap.h"
@@ -30,6 +31,20 @@ const char* toolNames[TOOL_MAX] = {
 
 Vector2 gridSize = {16, 16};
 Rectangle drawingArea = {424, 40, 592, 592};
+
+Vitmap* currentVitmap = NULL;
+Shape* currentShape = NULL;
+Vector2* currentVertex = NULL;
+
+Tool currentTool = TOOL_DRAW;
+bool isDrawingShape = false;
+
+Sound clickSound; 
+Sound pressSound; 
+Sound snapSound; 
+Sound slidingSound;
+
+Color ColorPickerValue = {0, 0, 0, 0};
 
 //----------------------------------------------------------------------------------
 // Controls Functions Declaration
@@ -133,7 +148,6 @@ void drawShapeOutline(Shape* shape, Vector2 position, Vector2 scale, int pattern
     free(transformedPoints);
 }
 
-
 void drawVitmap(Vitmap *vitmap, Vector2 position, Vector2 scale)
 {
     for (int i = 0; i < vitmap->numShapes; i++)
@@ -170,91 +184,6 @@ float clamp(float value, float min, float max)
 float lerp(float a, float b, float t)
 {
     return a + (b - a) * t;
-}
-
-void saveVitmapToFile(Vitmap* vitmap, const char* filename)
-{
-    // Open the file in binary write mode
-    FILE* file = fopen(filename, "wb");
-    if (file == NULL)
-    {
-        printf("Failed to open file for writing.\n");
-        return;
-    }
-    
-    // Write the number of shapes in the Vitmap
-    fwrite(&(vitmap->numShapes), sizeof(int), 1, file);
-    
-    // Write each shape in the Vitmap
-    for (int i = 0; i < vitmap->numShapes; i++)
-    {
-        Shape* shape = &(vitmap->shapes[i]);
-        
-        // Write the number of points in the shape
-        fwrite(&(shape->numPoints), sizeof(int), 1, file);
-        
-        // Write the points of the shape
-        fwrite(shape->points, sizeof(Vector2), shape->numPoints, file);
-        
-        // Write the color of the shape
-        fwrite(&(shape->color), sizeof(Color), 1, file);
-    }
-    
-    // Close the file
-    fclose(file);
-    
-    printf("Vitmap saved successfully.\n");
-}
-
-Vitmap loadVitmapFromFile(const char* filename)
-{
-    Vitmap vitmap = *createVitmap();
-
-    // addShapeToVitmap(&vitmap);
-    // addPointToShape(&vitmap.shapes[0], (Vector2){0.0f, 0.0f});
-    // addPointToShape(&vitmap.shapes[0], (Vector2){1.0f, 1.0f});
-    // addPointToShape(&vitmap.shapes[0], (Vector2){0.0f, 1.0f});
-
-    // printVitmap(&vitmap);
-    
-    // Open the file in binary read mode
-    FILE* file = fopen(filename, "rb");
-    if (file == NULL)
-    {
-        printf("Failed to open file for reading.\n");
-        return vitmap;
-    }
-    
-    // Read the number of shapes in the Vitmap
-    int numShapesInTheFile = 0;
-    fread(&numShapesInTheFile, sizeof(int), 1, file);
-    printf("Number of shapes: %d\n", vitmap.numShapes);
-    // Read each shape in the Vitmap
-    for (int i = 0; i < numShapesInTheFile; i++)
-    {
-        addShapeToVitmap(&vitmap);
-        Shape* shape = &(vitmap.shapes[vitmap.numShapes - 1]);
-        
-        // Read the number of points in the shape
-        int numPointsInHere = 0;
-        fread(&(numPointsInHere), sizeof(int), 1, file);
-        for (int j = 0; j < numPointsInHere; j++)
-        {
-            Vector2 pointToAdd = {0.0f, 0.0f};
-            fread(&pointToAdd, sizeof(Vector2), 1, file);
-            addPointToShape(shape, pointToAdd);
-        }
-        
-        // Read the color of the shape
-        fread(&(shape->color), sizeof(Color), 1, file);
-    }
-    
-    // Close the file
-    fclose(file);
-    
-    printf("Vitmap loaded successfully.\n");
-    
-    return vitmap;
 }
 
 int getShapesUnderPos(Vitmap* vitmap, Vector2 pos, Shape* shapesUnderMouseOut[111])
@@ -323,11 +252,147 @@ Vector2 vitToScreenCoord(Vector2 vitSpaceCoord)
     return vector2Transform(vitSpaceCoord, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
 }
 
-bool checkCollisionPointCircle(Vector2 point, Vector2 center, float radius)
+void drawVertexHandle(Vector2 pos, float size, bool inProximity)
 {
-    return (point.x - center.x) * (point.x - center.x) + (point.y - center.y) * (point.y - center.y) < radius * radius;
+    if (inProximity)
+    {
+        DrawCircleV(pos, cosf(GetTime() * 10) * (size * 0.5f) + size, GREEN);
+        DrawCircleV(pos, sinf(GetTime() * 10) * (size * 0.5f) + size, BLACK);
+    }
+    else
+    {
+        DrawCircleV(pos, size + 1, BLACK);
+        DrawCircleV(pos, size, WHITE);
+    }
 }
 
+void processTool(Tool currentTool, Vector2 mouseDrawAreaPos)
+{
+    const float proxDistance = 0.4f;
+    Vector2 mouseSnappedPos = 
+    {
+        roundf(mouseDrawAreaPos.x),
+        roundf(mouseDrawAreaPos.y)
+    };
+    if (TOOL_DRAW != currentTool)
+    {
+        isDrawingShape = false;
+    }
+    switch (currentTool)
+    {
+        case TOOL_DRAW:
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !IsKeyDown(KEY_LEFT_SHIFT))
+            {
+                if (isDrawingShape)
+                {
+                    addPointToShape(currentShape, mouseSnappedPos);
+                }
+                else
+                {
+                    addShapeToVitmap(currentVitmap);
+                    currentShape = &currentVitmap->shapes[currentVitmap->numShapes - 1];
+                    isDrawingShape = true;
+                    addPointToShape(currentShape, mouseSnappedPos);
+                }
+                PlaySound(pressSound);
+            }
+            // Drop it
+            if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON))
+            {
+                isDrawingShape = false;
+            }
+            drawPlus(vitToScreenCoord(mouseSnappedPos));
+            // See verts when holding shift
+            if (IsKeyDown(KEY_LEFT_SHIFT))
+            {
+                for (int i = 0; i < currentShape->numPoints; i++)
+                {
+                    Vector2 point = currentShape->points[i];
+                    float dist = Vector2Distance(mouseDrawAreaPos, point);
+                    drawVertexHandle(vitToScreenCoord(point), 5.0f - dist * 2.0f, dist < proxDistance);
+                }
+            }
+            // Shift-click to delete a point
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && IsKeyDown(KEY_LEFT_SHIFT))
+            {
+                if (currentShape != NULL)
+                {
+                    for (int i = 0; i < currentShape->numPoints; i++)
+                    {
+                        Vector2 point = currentShape->points[i];
+                        if (Vector2Distance(mouseDrawAreaPos, point) < proxDistance)
+                        {
+                            removePointFromShape(currentShape, &currentShape->points[i]);
+                            break;
+                        }
+                    }
+                }
+            }
+            break;
+        case TOOL_SELECT:
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+            {
+                Shape* shapeUnderMouse = getShapeUnderPos(currentVitmap, mouseDrawAreaPos);
+                if (shapeUnderMouse != NULL)
+                {
+                    currentShape = shapeUnderMouse;
+                    ColorPickerValue = currentShape->color;
+                }
+                PlaySound(clickSound);
+            }
+            break;
+        case TOOL_EDIT:
+        {
+            // Draw a dot at each vertex of the current shape
+            if (currentShape != NULL)
+            {
+                for (int i = 0; i < currentShape->numPoints; i++)
+                {
+                    Vector2 point = currentShape->points[i];
+                    float dist = Vector2Distance(mouseDrawAreaPos, point);
+                    drawVertexHandle(vitToScreenCoord(point), 5.0f - dist * 2.0f, dist < proxDistance);
+                }
+            }
+            // Click near a dot and drag it to change its position
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+            {
+                if (currentShape != NULL)
+                {
+                    for (int i = 0; i < currentShape->numPoints; i++)
+                    {
+                        Vector2 point = currentShape->points[i];
+                        if (Vector2Distance(mouseDrawAreaPos, point) < proxDistance)
+                        {
+                            currentVertex = &currentShape->points[i];
+                            break;
+                        }
+                    }
+                }
+            }
+            if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && currentVertex != NULL)
+            {
+                if (IsKeyDown(KEY_LEFT_CONTROL))
+                {
+                    *currentVertex = mouseDrawAreaPos;
+                }
+                else
+                {
+                    *currentVertex = mouseSnappedPos;
+                }
+            }
+            if (IsKeyPressed(KEY_DELETE) && currentVertex != NULL)
+            {
+                removePointFromShape(currentShape, currentVertex);
+                currentVertex = NULL;
+            }
+            if (currentVertex != NULL)
+            {
+                DrawCircleV(vitToScreenCoord(*currentVertex), 4, RED);
+            }
+            break;
+        }
+    }
+}
 
 //------------------------------------------------------------------------------------
 // Program main entry point
@@ -343,19 +408,16 @@ int main(int argc, char *argv[])
     }
     
     // Initialization
-    //---------------------------------------------------------------------------------------
-
+    //--------------------------------------------------------------------------------------
     
+    currentVitmap = createVitmap();
     
-    Vitmap* currentVitmap = createVitmap();
-    Shape* currentShape = NULL;
     if (fileToLoad != NULL)
     {
         Vitmap loadedVmp = loadVitmapFromFile(fileToLoad);
         currentVitmap = &loadedVmp;
     }
     
-
     int screenWidth = 1280;
     int screenHeight = 720;
 
@@ -366,10 +428,10 @@ int main(int argc, char *argv[])
     InitAudioDevice();
 
     SetMasterVolume(10.0);
-    Sound clickSound = LoadSound("assets/click.wav");
-    Sound pressSound = LoadSound("assets/press.wav");
-    Sound snapSound = LoadSound("assets/snap.wav");
-    Sound slidingSound = LoadSound("assets/firing.wav");
+    clickSound = LoadSound("assets/click.wav");
+    pressSound = LoadSound("assets/press.wav");
+    snapSound = LoadSound("assets/snap.wav");
+    slidingSound = LoadSound("assets/firing.wav");
 
     float realVol = 0.0;
 
@@ -377,7 +439,6 @@ int main(int argc, char *argv[])
     //----------------------------------------------------------------------------------
     bool FilePathEditMode = false;
     char FilePathText[128] = "MyVitmap.vmp";
-    Color ColorPickerValue = {0, 0, 0, 0};
     Color BgGridColor = {50, 50, 50, 255};
     float resolution = 3.0;
 
@@ -390,8 +451,6 @@ int main(int argc, char *argv[])
     PlaySound(slidingSound);
 
     
-    Tool currentTool = TOOL_DRAW;
-    bool isEditingShape = false;
 
     // Main game loop
     while (!WindowShouldClose()) // Detect window close button or ESC key
@@ -409,14 +468,8 @@ int main(int argc, char *argv[])
         // Must stay between 0 and gridSize
         mouseDrawAreaPos.x = clamp(mouseDrawAreaPos.x, 0, gridSize.x);
         mouseDrawAreaPos.y = clamp(mouseDrawAreaPos.y, 0, gridSize.y);
-        Vector2 mouseSnappedPos = 
-        {
-            roundf(mouseDrawAreaPos.x),
-            roundf(mouseDrawAreaPos.y)
-        };
 
         bool isMouseInRect = CheckCollisionPointRec(GetMousePosition(), drawingArea);
-
 
         // VOLUME CONTROL FOR SLIIDEE!!!	---------------------------
         float mouse_dist = (fabs(mouseDrawAreaPos.x - lastMouseDrawAreaPos.x) + fabs(mouseDrawAreaPos.y - lastMouseDrawAreaPos.y));
@@ -451,18 +504,15 @@ int main(int argc, char *argv[])
         // {
         //     currentVitmap->numShapes--;
         // }
-        if (IsKeyPressed(KEY_P))
+        if (IsKeyPressed(KEY_LEFT_CONTROL) && IsKeyDown(KEY_P))
         {
             printVitmap(currentVitmap);
         }
-
-        
 
         if (currentShape != NULL)
         {
             currentShape->color = (Color){ColorPickerValue.r, ColorPickerValue.g, ColorPickerValue.b, 255};
         }
-
 
         // Loop sliding sound
         if (!IsSoundPlaying(slidingSound)) PlaySound(slidingSound);
@@ -500,7 +550,7 @@ int main(int argc, char *argv[])
         {
             drawVitmap(currentVitmap, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
             //drawShape(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
-            if (isEditingShape)
+            if (isDrawingShape)
             {
                 drawShapeOutline(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y}, 0);
             }
@@ -575,83 +625,9 @@ int main(int argc, char *argv[])
         //     vitmapAnim.numFrames++;
         // }
 
-        
-        switch (currentTool)
+        if (isMouseInRect)
         {
-            case TOOL_DRAW:
-                if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && isMouseInRect)
-                {
-                    if (isEditingShape)
-                    {
-                        addPointToShape(currentShape, mouseSnappedPos);
-                    }
-                    else
-                    {
-                        addShapeToVitmap(currentVitmap);
-                        currentShape = &currentVitmap->shapes[currentVitmap->numShapes - 1];
-                        isEditingShape = true;
-                        addPointToShape(currentShape, mouseSnappedPos);
-                    }
-                    PlaySound(pressSound);
-                }
-                // Drop it
-                if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && isMouseInRect)
-                {
-                    isEditingShape = false;
-                }
-                drawPlus(vitToScreenCoord(mouseSnappedPos));
-                break;
-            case TOOL_SELECT:
-                if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && isMouseInRect)
-                {
-                    Shape* shapeUnderMouse = getShapeUnderPos(currentVitmap, mouseDrawAreaPos);
-                    if (shapeUnderMouse != NULL)
-                    {
-                        currentShape = shapeUnderMouse;
-                        ColorPickerValue = currentShape->color;
-                    }
-                    PlaySound(clickSound);
-                }
-                break;
-            case TOOL_EDIT:
-                // Draw a dot at each vertex of the current shape
-                if (currentShape != NULL)
-                {
-                    for (int i = 0; i < currentShape->numPoints; i++)
-                    {
-                        Vector2 point = currentShape->points[i];
-                        DrawCircle(
-                            drawingArea.x + (point.x * drawingArea.width / gridSize.x),
-                            drawingArea.y + (point.y * drawingArea.height / gridSize.y),
-                            2.0,
-                            GREEN
-                        );
-                    }
-                }
-                // Click near a dot and drag it to change its position
-                if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && isMouseInRect)
-                {
-                    if (currentShape != NULL)
-                    {
-                        for (int i = 0; i < currentShape->numPoints; i++)
-                        {
-                            Vector2 point = currentShape->points[i];
-                            if (checkCollisionPointCircle(mouseDrawAreaPos, point, 1.0))
-                            {
-                                if (IsKeyDown(KEY_LEFT_CONTROL))
-                                {
-                                    currentShape->points[i] = mouseDrawAreaPos;
-                                }
-                                else
-                                {
-                                    currentShape->points[i] = mouseSnappedPos;
-                                }
-                                break;
-                            }
-                        }
-                    }
-                }
-                break;
+            processTool(currentTool, mouseDrawAreaPos);
         }
 
 

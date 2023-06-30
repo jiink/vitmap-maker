@@ -31,5 +31,8 @@ void printVitmap(const Vitmap* vitmap);
 Shape* createShape();
 Vitmap* createVitmap();
 void addPointToShape(Shape* shape, Vector2 point);
+void removePointFromShape(Shape* shape, Vector2* point);
 void addShapeToVitmap(Vitmap* vitmap);
 Vitmap* addVitmapToAnimation(VitmapAnimation* animation, Vitmap vitmap);
+void saveVitmapToFile(Vitmap* vitmap, const char* filename);
+Vitmap loadVitmapFromFile(const char* filename);
