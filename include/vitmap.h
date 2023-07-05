@@ -1,3 +1,6 @@
+#ifndef VITMAP_H
+#define VITMAP_H
+
 #include "raylib.h"
 #include "tesselator.h"
 
@@ -41,4 +44,7 @@ Shape* reorderShapeInVitmap(Vitmap* vitmap, Shape* shape, int direction);
 Vitmap* addVitmapToAnimation(VitmapAnimation* animation, Vitmap vitmap);
 void saveVitmapToFile(Vitmap* vitmap, const char* filename);
 Vitmap loadVitmapFromFile(const char* filename);
-void loadAndBakeVitmap(Vitmap* bakedVitmapOut, const char* filename);
+Vitmap* loadAndBakeVitmap(const char* filename);
+void drawVitmap(Vitmap *vitmap, Vector2 position, Vector2 scale, float rotation);
+
+#endif // VITMAP_H

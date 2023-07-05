@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include "include/vitmap.h"
+#include "include/raymath.h"
 
 void initShape(Shape* shape)
 {
@@ -61,6 +62,7 @@ Shape* createShape()
     shape->numPoints = 0;
     shape->color = (Color){0, 0, 0, 255};
     shape->points = NULL;
+    shape->tesselation = NULL;
     return shape;
 }
 
@@ -318,12 +320,12 @@ void bakeVitmap(Vitmap* vitmap)
     }
 }
 
-void loadAndBakeVitmap(Vitmap* bakedVitmapOut, const char* filename)
+Vitmap* loadAndBakeVitmap(const char* filename)
 {
     Vitmap* vitmap = malloc(sizeof *vitmap);
     *vitmap = loadVitmapFromFile(filename);
     bakeVitmap(vitmap);
-    *bakedVitmapOut = *vitmap;
+    return vitmap;
 }
 
 void drawShape(Shape* shape, Vector2 position, Vector2 scale, float rotation)
@@ -335,19 +337,24 @@ void drawShape(Shape* shape, Vector2 position, Vector2 scale, float rotation)
     const TESSindex *indices = tessGetElements(shape->tesselation);
     for (int i = 0; i < indexCount; i += 3)
     {
-        DrawTriangle(
-            (Vector2){vertices[indices[i] * 2], vertices[indices[i] * 2 + 1]},
+        Vector2 triReadVerts[3] = {
+            (Vector2){vertices[indices[i] * 2],     vertices[indices[i] * 2 + 1]},
             (Vector2){vertices[indices[i + 1] * 2], vertices[indices[i + 1] * 2 + 1]},
             (Vector2){vertices[indices[i + 2] * 2], vertices[indices[i + 2] * 2 + 1]},
+        };
+        DrawTriangle(
+            Vector2Add(Vector2Multiply(triReadVerts[0], scale), position),
+            Vector2Add(Vector2Multiply(triReadVerts[1], scale), position),
+            Vector2Add(Vector2Multiply(triReadVerts[2], scale), position),
             shape->color);
     }
 }
 
-void drawVitmap(Vitmap *vitmap, Vector2 position, Vector2 scale)
+void drawVitmap(Vitmap *vitmap, Vector2 position, Vector2 scale, float rotation)
 {
     for (int i = 0; i < vitmap->numShapes; i++)
     {
         Shape* shape = &vitmap->shapes[i];
-        drawShape(shape, position, scale, 0.0f);
+        drawShape(shape, position, scale, rotation);
     }
 }

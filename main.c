@@ -7,6 +7,7 @@
 #include "include/raylib.h"
 #include "include/raymath.h"
 #include "include/raygui.h"
+#include "include/rlgl.h"
 #include "include/tesselator.h"
 #include "vitmap.h"
 
@@ -581,7 +582,7 @@ int main(int argc, char *argv[])
         ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
 
         DrawRectangleRec(drawingArea, BgGridColor);
-        // draw grid dots AND checkerboard (gridSize has how many dots to draw in each direction)
+        // draw grid checkerboard (gridSize has how many checkers to draw in each direction)
         for (int i = 0; i < gridSize.x; i++)
         {
             for (int j = 0; j < gridSize.y; j++)
@@ -594,10 +595,9 @@ int main(int argc, char *argv[])
                         drawingArea.y + drawingArea.height / gridSize.y * j,
                         drawingArea.width / gridSize.x,
                         drawingArea.height / gridSize.y,
-                        (Color){BgGridColor.r + 10, BgGridColor.g + 10, BgGridColor.b + 10, 255} //Find a better way to do this😨
+                        ColorBrightness(BgGridColor, 0.05f)
                     );
                 }
-                DrawRectangle(drawingArea.x + drawingArea.width / gridSize.x * i, drawingArea.y + drawingArea.height / gridSize.y * j, 3, 3, BLACK);
             }	
         }
 
