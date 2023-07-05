@@ -1,7 +1,7 @@
-#include "vitmap.h"
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include "include/vitmap.h"
 
 void initShape(Shape* shape)
 {
@@ -54,7 +54,7 @@ void printVitmap(const Vitmap* vitmap)
 
 Shape* createShape()
 {
-    Shape* shape = (Shape*)malloc(sizeof(Shape));
+    Shape* shape = malloc(sizeof *shape);
     if (shape == NULL) {
         return NULL;
     }
@@ -66,7 +66,7 @@ Shape* createShape()
 
 Vitmap* createVitmap()
 {
-    Vitmap* vitmap = (Vitmap*)malloc(sizeof(Vitmap));
+    Vitmap* vitmap = malloc(sizeof *vitmap);
     if (vitmap == NULL) {
         return NULL;
     }
@@ -293,4 +293,35 @@ Vitmap loadVitmapFromFile(const char* filename)
     printf("Vitmap loaded successfully.\n");
     
     return vitmap;
+}
+
+void bakeShape(Shape* shape)
+{
+    TESStesselator** tess = &shape->tesselation;
+    if (*tess != NULL)
+    {
+        tessDeleteTess(*tess);
+    }
+    *tess = tessNewTess(NULL);
+    tessSetOption(*tess, TESS_CONSTRAINED_DELAUNAY_TRIANGULATION, 1);
+    tessAddContour(*tess, 2, shape->points, sizeof(Vector2), shape->numPoints);
+    tessTesselate(*tess, TESS_WINDING_ODD, TESS_POLYGONS, 3, 2, NULL);
+}
+
+void bakeVitmap(Vitmap* vitmap)
+{
+    // Bake all the shapes
+    for (int i = 0; i < vitmap->numShapes; i++)
+    {
+        Shape* shape = &(vitmap->shapes[i]);
+        bakeShape(shape);
+    }
+}
+
+void loadAndBakeVitmap(Vitmap* bakedVitmapOut, const char* filename)
+{
+    Vitmap* vitmap = malloc(sizeof *vitmap);
+    *vitmap = loadVitmapFromFile(filename);
+    bakeVitmap(vitmap);
+    *bakedVitmapOut = *vitmap;
 }
