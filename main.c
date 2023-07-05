@@ -97,7 +97,7 @@ void drawTesselation(TESStesselator* tesselator, Color color)
     }
 }
 
-void drawShape(Shape *shape, Vector2 position, Vector2 scale)
+void drawWorkShape(Shape *shape, Vector2 position, Vector2 scale)
 {
     Vector2* points = shape->points;
     int numPoints = shape->numPoints;
@@ -121,7 +121,7 @@ void drawShape(Shape *shape, Vector2 position, Vector2 scale)
     // DrawLineV(transformedPoints[numPoints - 1], transformedPoints[0], WHITE);
 }
 
-void drawShapeOutline(Shape* shape, Vector2 position, Vector2 scale, int pattern)
+void drawWorkShapeOutline(Shape* shape, Vector2 position, Vector2 scale, int pattern)
 {
     Vector2* points = shape->points;
     int numPoints = shape->numPoints;
@@ -148,12 +148,12 @@ void drawShapeOutline(Shape* shape, Vector2 position, Vector2 scale, int pattern
     free(transformedPoints);
 }
 
-void drawVitmap(Vitmap *vitmap, Vector2 position, Vector2 scale)
+void drawWorkVitmap(Vitmap *vitmap, Vector2 position, Vector2 scale)
 {
     for (int i = 0; i < vitmap->numShapes; i++)
     {
         Shape* shape = &vitmap->shapes[i];
-        drawShape(shape, position, scale);
+        drawWorkShape(shape, position, scale);
     }
 }
 
@@ -604,18 +604,18 @@ int main(int argc, char *argv[])
         rlDisableBackfaceCulling();
         if (currentVitmap != NULL)
         {
-            drawVitmap(currentVitmap, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
+            drawWorkVitmap(currentVitmap, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
         }
-            //drawShape(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
+            //drawWorkShape(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
         if (currentShape != NULL)
         {
             if (isDrawingShape)
             {
-                drawShapeOutline(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y}, 0);
+                drawWorkShapeOutline(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y}, 0);
             }
             else
             {
-                drawShapeOutline(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y}, 1);
+                drawWorkShapeOutline(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y}, 1);
             }
         }
         // rlEnableBackfaceCulling();

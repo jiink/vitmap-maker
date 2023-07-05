@@ -325,3 +325,29 @@ void loadAndBakeVitmap(Vitmap* bakedVitmapOut, const char* filename)
     bakeVitmap(vitmap);
     *bakedVitmapOut = *vitmap;
 }
+
+void drawShape(Shape* shape, Vector2 position, Vector2 scale, float rotation)
+{
+    // TODO: Implement transforms
+    // TODO: Bake the shape if the tesselator is NULL
+    const TESSreal *vertices = tessGetVertices(shape->tesselation);
+    int indexCount = tessGetElementCount(shape->tesselation) * 3;
+    const TESSindex *indices = tessGetElements(shape->tesselation);
+    for (int i = 0; i < indexCount; i += 3)
+    {
+        DrawTriangle(
+            (Vector2){vertices[indices[i] * 2], vertices[indices[i] * 2 + 1]},
+            (Vector2){vertices[indices[i + 1] * 2], vertices[indices[i + 1] * 2 + 1]},
+            (Vector2){vertices[indices[i + 2] * 2], vertices[indices[i + 2] * 2 + 1]},
+            shape->color);
+    }
+}
+
+void drawVitmap(Vitmap *vitmap, Vector2 position, Vector2 scale)
+{
+    for (int i = 0; i < vitmap->numShapes; i++)
+    {
+        Shape* shape = &vitmap->shapes[i];
+        drawShape(shape, position, scale, 0.0f);
+    }
+}
