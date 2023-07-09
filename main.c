@@ -16,16 +16,15 @@ typedef enum Tool
     TOOL_DRAW,
     TOOL_EYEDROPPER,
     TOOL_EDIT,
-    TOOL_ERASE,
-    TOOL_PAN,
+    TOOL_MOVE,
     TOOL_MAX
 } Tool;
 
 const char* toolNames[TOOL_MAX] = {
     "Draw",
     "Eyedropper",
-    "Erase",
-    "Pan"
+    "Edit",
+    "Move"
 };
 
 // Variable definitions
@@ -40,7 +39,9 @@ Vector2* currentVertex = NULL;
 Tool currentTool = TOOL_DRAW;
 bool isDrawingShape = false;
 bool isMovingShape = false;
+bool isMovingVitmap = false;
 Vector2 moveShapeStartPos = {0, 0};
+Vector2 moveVitmapStartPos = {0, 0};
 
 Sound clickSound; 
 Sound pressSound; 
@@ -465,6 +466,30 @@ void processTool(Tool currentTool, Vector2 mouseDrawAreaPos)
             }
             break;
         }
+        case TOOL_MOVE:
+        {
+            // Press M to move all shapes in the vitmap. Click to confirm.
+            if (IsKeyPressed(KEY_M) && !isMovingVitmap)
+            {
+                isMovingVitmap = true;
+                moveVitmapStartPos = mouseSnappedPos;
+            }
+            if (isMovingVitmap)
+            {
+                if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+                {
+                    isMovingVitmap = false;
+                    moveVitmapStartPos = (Vector2){0, 0};
+                }
+                else
+                {
+                    Vector2 moveVector = Vector2Subtract(mouseSnappedPos, moveVitmapStartPos);
+                    moveVitmapStartPos = mouseSnappedPos;
+                    moveVitmap(currentVitmap, moveVector);
+                }
+            }
+            break;
+        }
     }
 }
 
@@ -679,7 +704,7 @@ int main(int argc, char *argv[])
             FilePathEditMode = !FilePathEditMode;
         if (GuiTextBox((Rectangle){24, 432, 336, 20}, OverlayImgPathText, 128, OverlayImgPathEditMode))
             OverlayImgPathEditMode = !OverlayImgPathEditMode;
-        currentTool = GuiToggleGroup((Rectangle){240, 120, 40, 24}, "DRAW;EYEDROPPER;EDIT;ERASE;PAN", currentTool);
+        currentTool = GuiToggleGroup((Rectangle){240, 120, 40, 24}, "DRAW;EYE;EDIT;MOVE", currentTool);
         if (GuiLabelButton((Rectangle){240, 96, 120, 24}, "Modes"))
         {
             LabelButton007();

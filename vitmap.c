@@ -366,3 +366,12 @@ void moveShape(Shape* shape, Vector2 deltaPos)
         shape->points[i] = Vector2Add(shape->points[i], deltaPos);
     }
 }
+
+void moveVitmap(Vitmap* vitmap, Vector2 deltaPos)
+{
+    for (int i = 0; i < vitmap->numShapes; i++)
+    {
+        Shape* shape = &vitmap->shapes[i];
+        moveShape(shape, deltaPos);
+    }
+}
