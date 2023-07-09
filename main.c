@@ -39,6 +39,8 @@ Vector2* currentVertex = NULL;
 
 Tool currentTool = TOOL_DRAW;
 bool isDrawingShape = false;
+bool isMovingShape = false;
+Vector2 moveShapeStartPos = {0, 0};
 
 Sound clickSound; 
 Sound pressSound; 
@@ -374,6 +376,29 @@ void processTool(Tool currentTool, Vector2 mouseDrawAreaPos)
                 {
                     removeShapeFromVitmap(currentVitmap, currentShape);
                     currentShape = NULL;
+                }
+            }
+            // Press G while not editing a shape to move it. Click to confirm.
+            if (!isDrawingShape && IsKeyPressed(KEY_G))
+            {
+                if (currentShape != NULL)
+                {
+                    isMovingShape = true;
+                    moveShapeStartPos = mouseSnappedPos;
+                }
+            }
+            if (isMovingShape)
+            {
+                if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+                {
+                    isMovingShape = false;
+                    moveShapeStartPos = (Vector2){0, 0};
+                }
+                else
+                {
+                    Vector2 moveVector = Vector2Subtract(mouseSnappedPos, moveShapeStartPos);
+                    moveShapeStartPos = mouseSnappedPos;
+                    moveShape(currentShape, moveVector);
                 }
             }
             break;

@@ -358,3 +358,11 @@ void drawVitmap(Vitmap *vitmap, Vector2 position, Vector2 scale, float rotation)
         drawShape(shape, position, scale, rotation);
     }
 }
+
+void moveShape(Shape* shape, Vector2 deltaPos)
+{
+    for (int i = 0; i < shape->numPoints; i++)
+    {
+        shape->points[i] = Vector2Add(shape->points[i], deltaPos);
+    }
+}
