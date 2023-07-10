@@ -563,6 +563,7 @@ int main(int argc, char *argv[])
     
 
     // Main game loop
+    SetExitKey(KEY_NULL);
     while (!WindowShouldClose()) // Detect window close button or ESC key
     {
         // Update
