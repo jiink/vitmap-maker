@@ -524,6 +524,7 @@ int main(int argc, char *argv[])
     
     // Initialization
     //--------------------------------------------------------------------------------------
+
     
     currentVitmap = createVitmap();
     
@@ -539,6 +540,8 @@ int main(int argc, char *argv[])
     Vector2 lastMouseDrawAreaPos = {0.0, 0.0};
 
     InitWindow(screenWidth, screenHeight, "vitmapMaker");
+
+    RenderTexture2D canvas = LoadRenderTexture(256, 256);
 
     InitAudioDevice();
 
@@ -632,6 +635,10 @@ int main(int argc, char *argv[])
         // Loop sliding sound
         if (!IsSoundPlaying(slidingSound)) PlaySound(slidingSound);
 
+        BeginTextureMode(canvas);
+            ClearBackground(RED);
+            DrawCircle(canvas.texture.width / 2, canvas.texture.height / 2, 50, WHITE);
+        EndTextureMode();
 
         // Draw
         //----------------------------------------------------------------------------------
@@ -755,7 +762,7 @@ int main(int argc, char *argv[])
         DrawText(TextFormat("Tool: %s", toolNames[currentTool]), 60, 390, 20, WHITE);
         //DrawText(TextFormat("Frame: %i", vitmapAnim.currentFrame), 500, 620, 20, WHITE);
         //----------------------------------------------------------------------------------
-
+        DrawTexture(canvas.texture, 0, 0, WHITE);
         EndDrawing();
         //----------------------------------------------------------------------------------
 
