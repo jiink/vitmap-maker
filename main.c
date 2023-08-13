@@ -32,6 +32,13 @@ const char* toolNames[TOOL_MAX] = {
 Vector2 gridSize = {16, 16};
 Rectangle drawingArea = {424, 40, 592, 592};
 
+Camera2D camera = {
+    .offset = {0, 0},
+    .target = {0, 0},
+    .rotation = 0,
+    .zoom = 25
+};
+
 Vitmap* currentVitmap = NULL;
 Shape* currentShape = NULL;
 Vector2* currentVertex = NULL;
@@ -541,8 +548,6 @@ int main(int argc, char *argv[])
 
     InitWindow(screenWidth, screenHeight, "vitmapMaker");
 
-    RenderTexture2D canvas = LoadRenderTexture(256, 256);
-
     InitAudioDevice();
 
     SetMasterVolume(10.0);
@@ -630,15 +635,22 @@ int main(int argc, char *argv[])
             printVitmap(currentVitmap);
         }
 
-        
-
         // Loop sliding sound
         if (!IsSoundPlaying(slidingSound)) PlaySound(slidingSound);
 
-        BeginTextureMode(canvas);
-            ClearBackground(RED);
-            DrawCircle(canvas.texture.width / 2, canvas.texture.height / 2, 50, WHITE);
-        EndTextureMode();
+        // Camera controls. Scroll to zoom and drag middle mouse button to pan.
+        if (IsMouseButtonPressed(MOUSE_MIDDLE_BUTTON))
+        {
+            lastMouseDrawAreaPos = mouseDrawAreaPos;
+        }
+        if (IsMouseButtonDown(MOUSE_MIDDLE_BUTTON))
+        {
+            Vector2 mouseDelta = Vector2Subtract(mouseDrawAreaPos, lastMouseDrawAreaPos);
+            camera.offset = Vector2Add(camera.offset, Vector2Scale(mouseDelta, 50.0));
+            lastMouseDrawAreaPos = mouseDrawAreaPos;
+        }
+        camera.zoom += GetMouseWheelMove() * 0.5;
+        camera.zoom = clamp(camera.zoom, 1.0, 100.0);
 
         // Draw
         //----------------------------------------------------------------------------------
@@ -646,45 +658,45 @@ int main(int argc, char *argv[])
 
         ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
 
-        DrawRectangleRec(drawingArea, BgGridColor);
+        //DrawRectangleRec(drawingArea, BgGridColor);
         // draw grid checkerboard (gridSize has how many checkers to draw in each direction)
-        for (int i = 0; i < gridSize.x; i++)
-        {
-            for (int j = 0; j < gridSize.y; j++)
+        // for (int i = 0; i < gridSize.x; i++)
+        // {
+        //     for (int j = 0; j < gridSize.y; j++)
+        //     {
+        //         // Checkerboard on every other juicy tile
+        //         if ((i - j) % 2 == 0)
+        //         {
+        //             DrawRectangle(
+        //                 drawingArea.x + drawingArea.width / gridSize.x * i,
+        //                 drawingArea.y + drawingArea.height / gridSize.y * j,
+        //                 drawingArea.width / gridSize.x,
+        //                 drawingArea.height / gridSize.y,
+        //                 ColorBrightness(BgGridColor, 0.05f)
+        //             );
+        //         }
+        //     }	
+        // }
+        BeginMode2D(camera);
+            rlDisableBackfaceCulling();
+            if (currentVitmap != NULL)
             {
-                // Checkerboard on every other juicy tile
-                if ((i - j) % 2 == 0)
+                drawWorkVitmap(currentVitmap, (Vector2){0, 0}, (Vector2){1, 1});
+            }
+                //drawWorkShape(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
+            if (currentShape != NULL)
+            {
+                if (isDrawingShape)
                 {
-                    DrawRectangle(
-                        drawingArea.x + drawingArea.width / gridSize.x * i,
-                        drawingArea.y + drawingArea.height / gridSize.y * j,
-                        drawingArea.width / gridSize.x,
-                        drawingArea.height / gridSize.y,
-                        ColorBrightness(BgGridColor, 0.05f)
-                    );
+                    drawWorkShapeOutline(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y}, 0);
                 }
-            }	
-        }
-
-        rlDisableBackfaceCulling();
-        if (currentVitmap != NULL)
-        {
-            drawWorkVitmap(currentVitmap, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
-        }
-            //drawWorkShape(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
-        if (currentShape != NULL)
-        {
-            if (isDrawingShape)
-            {
-                drawWorkShapeOutline(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y}, 0);
+                else
+                {
+                    drawWorkShapeOutline(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y}, 1);
+                }
             }
-            else
-            {
-                drawWorkShapeOutline(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y}, 1);
-            }
-        }
-        // rlEnableBackfaceCulling();
-
+            // rlEnableBackfaceCulling();
+        EndMode2D();
         if (currentShape != NULL) DrawText(TextFormat("pts: %d", currentShape->numPoints), 24, 456, 20, BLACK);
         DrawText(TextFormat("mouse draw area pos: %f, %f", mouseDrawAreaPos.x, mouseDrawAreaPos.y), 24, 480, 20, BLACK);
 
@@ -762,7 +774,6 @@ int main(int argc, char *argv[])
         DrawText(TextFormat("Tool: %s", toolNames[currentTool]), 60, 390, 20, WHITE);
         //DrawText(TextFormat("Frame: %i", vitmapAnim.currentFrame), 500, 620, 20, WHITE);
         //----------------------------------------------------------------------------------
-        DrawTexture(canvas.texture, 0, 0, WHITE);
         EndDrawing();
         //----------------------------------------------------------------------------------
 
