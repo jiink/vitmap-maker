@@ -285,10 +285,11 @@ void processTool(Tool currentTool, Vector2 mouseDrawAreaPos)
     switch (currentTool)
     {
         case TOOL_DRAW:
-            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !IsKeyDown(KEY_LEFT_SHIFT))
+            if (!isMovingShape && IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !IsKeyDown(KEY_LEFT_SHIFT))
             {
                 if (isDrawingShape)
                 {
+                    
                     addPointToShape(currentShape, mouseSnappedPos);
                 }
                 else
@@ -304,6 +305,12 @@ void processTool(Tool currentTool, Vector2 mouseDrawAreaPos)
             if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && isDrawingShape)
             {
                 isDrawingShape = false;
+                // if it has less than 3 points destroy the shape
+                if (currentShape->numPoints < 3)
+                {
+                    removeShapeFromVitmap(currentVitmap, currentShape);
+                    currentShape = NULL;
+                }
             }
             // Press middlemouse to deselect shape
             if (IsMouseButtonPressed(MOUSE_MIDDLE_BUTTON))
