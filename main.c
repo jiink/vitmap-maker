@@ -644,25 +644,6 @@ int main(int argc, char *argv[])
 
         ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
 
-        //DrawRectangleRec(drawingArea, BgGridColor);
-        // draw grid checkerboard (gridSize has how many checkers to draw in each direction)
-        // for (int i = 0; i < gridSize.x; i++)
-        // {
-        //     for (int j = 0; j < gridSize.y; j++)
-        //     {
-        //         // Checkerboard on every other juicy tile
-        //         if ((i - j) % 2 == 0)
-        //         {
-        //             DrawRectangle(
-        //                 drawingArea.x + drawingArea.width / gridSize.x * i,
-        //                 drawingArea.y + drawingArea.height / gridSize.y * j,
-        //                 drawingArea.width / gridSize.x,
-        //                 drawingArea.height / gridSize.y,
-        //                 ColorBrightness(BgGridColor, 0.05f)
-        //             );
-        //         }
-        //     }	
-        // }
         BeginMode2D(camera);
             rlDisableBackfaceCulling();
             if (currentVitmap != NULL)
@@ -683,6 +664,36 @@ int main(int argc, char *argv[])
             }
             // rlEnableBackfaceCulling();
         EndMode2D();
+        // Draw an X at origin
+        DrawLineEx(
+            GetWorldToScreen2D((Vector2) {-1, -1}, camera),
+            GetWorldToScreen2D((Vector2) {1, 1}, camera),
+            1,
+            WHITE
+        );
+        DrawLineEx(
+            GetWorldToScreen2D((Vector2) {1, -1}, camera),
+            GetWorldToScreen2D((Vector2) {-1, 1}, camera),
+            1,
+            WHITE
+        );
+        // Draw size guide
+        int sizeGuideDimensions = 8;
+        Vector2 sizeGuidePos = GetWorldToScreen2D((Vector2){-sizeGuideDimensions, -sizeGuideDimensions}, camera);
+        Vector2 sizeGuideSize = GetWorldToScreen2D((Vector2) {sizeGuideDimensions, sizeGuideDimensions}, camera);
+        Rectangle sizeGuideRect = {sizeGuidePos.x, sizeGuidePos.y, sizeGuideSize.x, sizeGuideSize.y};
+        DrawRectangleLinesEx(sizeGuideRect, 1, BLUE);
+        // Draw a grid of dots around where the camera is
+        for (int x = -32; x < 32; x++)
+        {
+            for (int y = -32; y < 32; y++)
+            {
+                DrawRectangleV(
+                    GetWorldToScreen2D((Vector2) {x, y}, camera),
+                    (Vector2) {1, 1},
+                    WHITE);
+            }
+        }
         if (currentShape != NULL) DrawText(TextFormat("pts: %d", currentShape->numPoints), 24, 456, 20, BLACK);
         DrawText(TextFormat("raw mouse pos: %f, %f", GetMousePosition().x, GetMousePosition().y), 24, 460, 20, BLACK);
         DrawText(TextFormat("mouse draw area pos: %f, %f", mouseDrawAreaPos.x, mouseDrawAreaPos.y), 24, 480, 20, BLACK);
