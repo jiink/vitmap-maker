@@ -586,14 +586,15 @@ int main(int argc, char *argv[])
         //currentShape = &currentVitmap->shapes[currentVitmap->numShapes - 1];
 
         // Get mouse coords in drawingArea coords
-        Vector2 mouseDrawAreaPos = 
-        {
-            (GetMousePosition().x - drawingArea.x) / (drawingArea.width / gridSize.x),
-            (GetMousePosition().y - drawingArea.y) / (drawingArea.height / gridSize.y),
-        };
+        // Vector2 mouseDrawAreaPos = 
+        // {
+        //     (GetMousePosition().x - drawingArea.x) / (drawingArea.width / gridSize.x),
+        //     (GetMousePosition().y - drawingArea.y) / (drawingArea.height / gridSize.y),
+        // };
+        Vector2 mouseDrawAreaPos = GetScreenToWorld2D(GetMousePosition(), camera);
         // Must stay between 0 and gridSize
-        mouseDrawAreaPos.x = clamp(mouseDrawAreaPos.x, 0, gridSize.x);
-        mouseDrawAreaPos.y = clamp(mouseDrawAreaPos.y, 0, gridSize.y);
+        // mouseDrawAreaPos.x = clamp(mouseDrawAreaPos.x, 0, gridSize.x);
+        // mouseDrawAreaPos.y = clamp(mouseDrawAreaPos.y, 0, gridSize.y);
 
         bool isMouseInRect = CheckCollisionPointRec(GetMousePosition(), drawingArea);
 
@@ -645,8 +646,7 @@ int main(int argc, char *argv[])
         }
         if (IsMouseButtonDown(MOUSE_MIDDLE_BUTTON))
         {
-            Vector2 mouseDelta = Vector2Subtract(mouseDrawAreaPos, lastMouseDrawAreaPos);
-            camera.offset = Vector2Add(camera.offset, Vector2Scale(mouseDelta, 50.0));
+            camera.offset = Vector2Add(camera.offset, Vector2Scale(GetMouseDelta(), 1.0));
             lastMouseDrawAreaPos = mouseDrawAreaPos;
         }
         camera.zoom += GetMouseWheelMove() * 0.5;
@@ -698,6 +698,7 @@ int main(int argc, char *argv[])
             // rlEnableBackfaceCulling();
         EndMode2D();
         if (currentShape != NULL) DrawText(TextFormat("pts: %d", currentShape->numPoints), 24, 456, 20, BLACK);
+        DrawText(TextFormat("raw mouse pos: %f, %f", GetMousePosition().x, GetMousePosition().y), 24, 460, 20, BLACK);
         DrawText(TextFormat("mouse draw area pos: %f, %f", mouseDrawAreaPos.x, mouseDrawAreaPos.y), 24, 480, 20, BLACK);
 
         // raygui: controls drawing
