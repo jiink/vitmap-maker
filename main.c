@@ -258,11 +258,6 @@ Vector2 vector2Transform(Vector2 input, Vector2 pos, Vector2 scale)
     return output;
 }
 
-Vector2 vitToScreenCoord(Vector2 vitSpaceCoord)
-{
-    return vector2Transform(vitSpaceCoord, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
-}
-
 void drawVertexHandle(Vector2 pos, float size, bool inProximity)
 {
     if (inProximity)
@@ -319,13 +314,13 @@ void processTool(Tool currentTool, Vector2 mouseDrawAreaPos)
                     currentShape = NULL;
                 }
             }
-            // Press middlemouse to deselect shape
-            if (IsMouseButtonPressed(MOUSE_MIDDLE_BUTTON))
+            // Press esc to deselect shape
+            if (IsMouseButtonPressed(KEY_ESCAPE))
             {
                 isDrawingShape = false;
                 currentShape = NULL;
             }
-            drawPlus(vitToScreenCoord(mouseSnappedPos));
+            drawPlus(GetWorldToScreen2D(mouseSnappedPos, camera));
             // See verts when holding shift
             if (IsKeyDown(KEY_LEFT_SHIFT))
             {
@@ -333,7 +328,7 @@ void processTool(Tool currentTool, Vector2 mouseDrawAreaPos)
                 {
                     Vector2 point = currentShape->points[i];
                     float dist = Vector2Distance(mouseDrawAreaPos, point);
-                    drawVertexHandle(vitToScreenCoord(point), 5.0f - dist * 2.0f, dist < proxDistance);
+                    drawVertexHandle(GetWorldToScreen2D(point, camera), 5.0f - dist * 2.0f, dist < proxDistance);
                 }
             }
             // Shift-click to delete a point
@@ -438,7 +433,7 @@ void processTool(Tool currentTool, Vector2 mouseDrawAreaPos)
                 {
                     Vector2 point = currentShape->points[i];
                     float dist = Vector2Distance(mouseDrawAreaPos, point);
-                    drawVertexHandle(vitToScreenCoord(point), 5.0f - dist * 2.0f, dist < proxDistance);
+                    drawVertexHandle(GetWorldToScreen2D(point, camera), 5.0f - dist * 2.0f, dist < proxDistance);
                 }
                 currentShape->color = (Color){ColorPickerValue.r, ColorPickerValue.g, ColorPickerValue.b, 255};
             }
@@ -476,7 +471,7 @@ void processTool(Tool currentTool, Vector2 mouseDrawAreaPos)
             }
             if (currentVertex != NULL)
             {
-               DrawCircleV(vitToScreenCoord(*currentVertex), 4, RED);
+               DrawCircleV(GetWorldToScreen2D(*currentVertex, camera), 4, RED);
             }
             break;
         }
@@ -585,16 +580,7 @@ int main(int argc, char *argv[])
         //currentVitmap = &vitmapAnim.vitmaps[vitmapAnim.currentFrame];
         //currentShape = &currentVitmap->shapes[currentVitmap->numShapes - 1];
 
-        // Get mouse coords in drawingArea coords
-        // Vector2 mouseDrawAreaPos = 
-        // {
-        //     (GetMousePosition().x - drawingArea.x) / (drawingArea.width / gridSize.x),
-        //     (GetMousePosition().y - drawingArea.y) / (drawingArea.height / gridSize.y),
-        // };
         Vector2 mouseDrawAreaPos = GetScreenToWorld2D(GetMousePosition(), camera);
-        // Must stay between 0 and gridSize
-        // mouseDrawAreaPos.x = clamp(mouseDrawAreaPos.x, 0, gridSize.x);
-        // mouseDrawAreaPos.y = clamp(mouseDrawAreaPos.y, 0, gridSize.y);
 
         bool isMouseInRect = CheckCollisionPointRec(GetMousePosition(), drawingArea);
 
@@ -688,11 +674,11 @@ int main(int argc, char *argv[])
             {
                 if (isDrawingShape)
                 {
-                    drawWorkShapeOutline(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y}, 0);
+                    drawWorkShapeOutline(currentShape, (Vector2){0, 0}, (Vector2){1, 1}, 0);
                 }
                 else
                 {
-                    drawWorkShapeOutline(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y}, 1);
+                    drawWorkShapeOutline(currentShape, (Vector2){0, 0}, (Vector2){1, 1}, 1);
                 }
             }
             // rlEnableBackfaceCulling();
