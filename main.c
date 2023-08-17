@@ -32,6 +32,13 @@ const char* toolNames[TOOL_MAX] = {
 Vector2 gridSize = {16, 16};
 Rectangle drawingArea = {424, 40, 592, 592};
 
+Camera2D camera = {
+    .offset = {0, 0},
+    .target = {0, 0},
+    .rotation = 0,
+    .zoom = 25
+};
+
 Vitmap* currentVitmap = NULL;
 Shape* currentShape = NULL;
 Vector2* currentVertex = NULL;
@@ -251,11 +258,6 @@ Vector2 vector2Transform(Vector2 input, Vector2 pos, Vector2 scale)
     return output;
 }
 
-Vector2 vitToScreenCoord(Vector2 vitSpaceCoord)
-{
-    return vector2Transform(vitSpaceCoord, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
-}
-
 void drawVertexHandle(Vector2 pos, float size, bool inProximity)
 {
     if (inProximity)
@@ -312,13 +314,13 @@ void processTool(Tool currentTool, Vector2 mouseDrawAreaPos)
                     currentShape = NULL;
                 }
             }
-            // Press middlemouse to deselect shape
-            if (IsMouseButtonPressed(MOUSE_MIDDLE_BUTTON))
+            // Press esc to deselect shape
+            if (IsMouseButtonPressed(KEY_ESCAPE))
             {
                 isDrawingShape = false;
                 currentShape = NULL;
             }
-            drawPlus(vitToScreenCoord(mouseSnappedPos));
+            drawPlus(GetWorldToScreen2D(mouseSnappedPos, camera));
             // See verts when holding shift
             if (IsKeyDown(KEY_LEFT_SHIFT))
             {
@@ -326,7 +328,7 @@ void processTool(Tool currentTool, Vector2 mouseDrawAreaPos)
                 {
                     Vector2 point = currentShape->points[i];
                     float dist = Vector2Distance(mouseDrawAreaPos, point);
-                    drawVertexHandle(vitToScreenCoord(point), 5.0f - dist * 2.0f, dist < proxDistance);
+                    drawVertexHandle(GetWorldToScreen2D(point, camera), 5.0f - dist * 2.0f, dist < proxDistance);
                 }
             }
             // Shift-click to delete a point
@@ -431,7 +433,7 @@ void processTool(Tool currentTool, Vector2 mouseDrawAreaPos)
                 {
                     Vector2 point = currentShape->points[i];
                     float dist = Vector2Distance(mouseDrawAreaPos, point);
-                    drawVertexHandle(vitToScreenCoord(point), 5.0f - dist * 2.0f, dist < proxDistance);
+                    drawVertexHandle(GetWorldToScreen2D(point, camera), 5.0f - dist * 2.0f, dist < proxDistance);
                 }
                 currentShape->color = (Color){ColorPickerValue.r, ColorPickerValue.g, ColorPickerValue.b, 255};
             }
@@ -469,7 +471,7 @@ void processTool(Tool currentTool, Vector2 mouseDrawAreaPos)
             }
             if (currentVertex != NULL)
             {
-               DrawCircleV(vitToScreenCoord(*currentVertex), 4, RED);
+               DrawCircleV(GetWorldToScreen2D(*currentVertex, camera), 4, RED);
             }
             break;
         }
@@ -509,6 +511,21 @@ void drawOverlayImg(Texture2D img, Rectangle destination, float alpha)
     DrawTexturePro(img, (Rectangle){0, 0, img.width, img.height}, destination, (Vector2){0, 0}, 0, Fade(WHITE, alpha));
 }
 
+void drawSizeGuide(int size, Color color)
+{
+    // Draw size guide
+    int sizeGuideDimension = size/2;
+    Vector2 corner0 = GetWorldToScreen2D((Vector2){-sizeGuideDimension, -sizeGuideDimension}, camera);
+    Vector2 corner1 = GetWorldToScreen2D((Vector2){sizeGuideDimension, -sizeGuideDimension}, camera);
+    Vector2 corner2 = GetWorldToScreen2D((Vector2){sizeGuideDimension, sizeGuideDimension}, camera);
+    Vector2 corner3 = GetWorldToScreen2D((Vector2){-sizeGuideDimension, sizeGuideDimension}, camera);
+    DrawLine(corner0.x, corner0.y, corner1.x, corner1.y, color);
+    DrawLine(corner1.x, corner1.y, corner2.x, corner2.y, color);
+    DrawLine(corner2.x, corner2.y, corner3.x, corner3.y, color);
+    DrawLine(corner3.x, corner3.y, corner0.x, corner0.y, color);
+    DrawText(TextFormat("%dx%d", size, size), corner0.x, corner0.y, 20, color);
+}
+
 //------------------------------------------------------------------------------------
 // Program main entry point
 //------------------------------------------------------------------------------------
@@ -524,6 +541,7 @@ int main(int argc, char *argv[])
     
     // Initialization
     //--------------------------------------------------------------------------------------
+
     
     currentVitmap = createVitmap();
     
@@ -577,15 +595,7 @@ int main(int argc, char *argv[])
         //currentVitmap = &vitmapAnim.vitmaps[vitmapAnim.currentFrame];
         //currentShape = &currentVitmap->shapes[currentVitmap->numShapes - 1];
 
-        // Get mouse coords in drawingArea coords
-        Vector2 mouseDrawAreaPos = 
-        {
-            (GetMousePosition().x - drawingArea.x) / (drawingArea.width / gridSize.x),
-            (GetMousePosition().y - drawingArea.y) / (drawingArea.height / gridSize.y),
-        };
-        // Must stay between 0 and gridSize
-        mouseDrawAreaPos.x = clamp(mouseDrawAreaPos.x, 0, gridSize.x);
-        mouseDrawAreaPos.y = clamp(mouseDrawAreaPos.y, 0, gridSize.y);
+        Vector2 mouseDrawAreaPos = GetScreenToWorld2D(GetMousePosition(), camera);
 
         bool isMouseInRect = CheckCollisionPointRec(GetMousePosition(), drawingArea);
 
@@ -627,11 +637,21 @@ int main(int argc, char *argv[])
             printVitmap(currentVitmap);
         }
 
-        
-
         // Loop sliding sound
         if (!IsSoundPlaying(slidingSound)) PlaySound(slidingSound);
 
+        // Camera controls. Scroll to zoom and drag middle mouse button to pan.
+        if (IsMouseButtonPressed(MOUSE_MIDDLE_BUTTON))
+        {
+            lastMouseDrawAreaPos = mouseDrawAreaPos;
+        }
+        if (IsMouseButtonDown(MOUSE_MIDDLE_BUTTON))
+        {
+            camera.offset = Vector2Add(camera.offset, Vector2Scale(GetMouseDelta(), 1.0));
+            lastMouseDrawAreaPos = mouseDrawAreaPos;
+        }
+        camera.zoom += GetMouseWheelMove() * 4.0f;
+        camera.zoom = clamp(camera.zoom, 1.0, 100.0);
 
         // Draw
         //----------------------------------------------------------------------------------
@@ -639,46 +659,53 @@ int main(int argc, char *argv[])
 
         ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
 
-        DrawRectangleRec(drawingArea, BgGridColor);
-        // draw grid checkerboard (gridSize has how many checkers to draw in each direction)
-        for (int i = 0; i < gridSize.x; i++)
-        {
-            for (int j = 0; j < gridSize.y; j++)
+        BeginMode2D(camera);
+            rlDisableBackfaceCulling();
+            if (currentVitmap != NULL)
             {
-                // Checkerboard on every other juicy tile
-                if ((i - j) % 2 == 0)
+                drawWorkVitmap(currentVitmap, (Vector2){0, 0}, (Vector2){1, 1});
+            }
+                //drawWorkShape(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
+            if (currentShape != NULL)
+            {
+                if (isDrawingShape)
                 {
-                    DrawRectangle(
-                        drawingArea.x + drawingArea.width / gridSize.x * i,
-                        drawingArea.y + drawingArea.height / gridSize.y * j,
-                        drawingArea.width / gridSize.x,
-                        drawingArea.height / gridSize.y,
-                        ColorBrightness(BgGridColor, 0.05f)
-                    );
+                    drawWorkShapeOutline(currentShape, (Vector2){0, 0}, (Vector2){1, 1}, 0);
                 }
-            }	
-        }
-
-        rlDisableBackfaceCulling();
-        if (currentVitmap != NULL)
-        {
-            drawWorkVitmap(currentVitmap, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
-        }
-            //drawWorkShape(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y});
-        if (currentShape != NULL)
-        {
-            if (isDrawingShape)
-            {
-                drawWorkShapeOutline(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y}, 0);
+                else
+                {
+                    drawWorkShapeOutline(currentShape, (Vector2){0, 0}, (Vector2){1, 1}, 1);
+                }
             }
-            else
+            // rlEnableBackfaceCulling();
+        EndMode2D();
+        // Draw an X at origin
+        DrawLineEx(
+            GetWorldToScreen2D((Vector2) {-1, -1}, camera),
+            GetWorldToScreen2D((Vector2) {1, 1}, camera),
+            1,
+            WHITE
+        );
+        DrawLineEx(
+            GetWorldToScreen2D((Vector2) {1, -1}, camera),
+            GetWorldToScreen2D((Vector2) {-1, 1}, camera),
+            1,
+            WHITE
+        );
+        
+        drawSizeGuide(16, BLUE);
+        // Draw a grid of dots around where the camera is
+        for (int x = -32; x < 32; x++)
+        {
+            for (int y = -32; y < 32; y++)
             {
-                drawWorkShapeOutline(currentShape, (Vector2){drawingArea.x, drawingArea.y}, (Vector2){drawingArea.width / gridSize.x, drawingArea.height / gridSize.y}, 1);
+                DrawPixelV(
+                    GetWorldToScreen2D((Vector2) {x, y}, camera),
+                    WHITE);
             }
         }
-        // rlEnableBackfaceCulling();
-
         if (currentShape != NULL) DrawText(TextFormat("pts: %d", currentShape->numPoints), 24, 456, 20, BLACK);
+        DrawText(TextFormat("raw mouse pos: %f, %f", GetMousePosition().x, GetMousePosition().y), 24, 460, 20, BLACK);
         DrawText(TextFormat("mouse draw area pos: %f, %f", mouseDrawAreaPos.x, mouseDrawAreaPos.y), 24, 480, 20, BLACK);
 
         // raygui: controls drawing
@@ -755,7 +782,6 @@ int main(int argc, char *argv[])
         DrawText(TextFormat("Tool: %s", toolNames[currentTool]), 60, 390, 20, WHITE);
         //DrawText(TextFormat("Frame: %i", vitmapAnim.currentFrame), 500, 620, 20, WHITE);
         //----------------------------------------------------------------------------------
-
         EndDrawing();
         //----------------------------------------------------------------------------------
 
