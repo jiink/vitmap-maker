@@ -511,6 +511,21 @@ void drawOverlayImg(Texture2D img, Rectangle destination, float alpha)
     DrawTexturePro(img, (Rectangle){0, 0, img.width, img.height}, destination, (Vector2){0, 0}, 0, Fade(WHITE, alpha));
 }
 
+void drawSizeGuide(int size, Color color)
+{
+    // Draw size guide
+    int sizeGuideDimension = size/2;
+    Vector2 corner0 = GetWorldToScreen2D((Vector2){-sizeGuideDimension, -sizeGuideDimension}, camera);
+    Vector2 corner1 = GetWorldToScreen2D((Vector2){sizeGuideDimension, -sizeGuideDimension}, camera);
+    Vector2 corner2 = GetWorldToScreen2D((Vector2){sizeGuideDimension, sizeGuideDimension}, camera);
+    Vector2 corner3 = GetWorldToScreen2D((Vector2){-sizeGuideDimension, sizeGuideDimension}, camera);
+    DrawLine(corner0.x, corner0.y, corner1.x, corner1.y, color);
+    DrawLine(corner1.x, corner1.y, corner2.x, corner2.y, color);
+    DrawLine(corner2.x, corner2.y, corner3.x, corner3.y, color);
+    DrawLine(corner3.x, corner3.y, corner0.x, corner0.y, color);
+    DrawText(TextFormat("%dx%d", size, size), corner0.x, corner0.y, 20, color);
+}
+
 //------------------------------------------------------------------------------------
 // Program main entry point
 //------------------------------------------------------------------------------------
@@ -635,7 +650,7 @@ int main(int argc, char *argv[])
             camera.offset = Vector2Add(camera.offset, Vector2Scale(GetMouseDelta(), 1.0));
             lastMouseDrawAreaPos = mouseDrawAreaPos;
         }
-        camera.zoom += GetMouseWheelMove() * 0.5;
+        camera.zoom += GetMouseWheelMove() * 4.0f;
         camera.zoom = clamp(camera.zoom, 1.0, 100.0);
 
         // Draw
@@ -677,20 +692,15 @@ int main(int argc, char *argv[])
             1,
             WHITE
         );
-        // Draw size guide
-        int sizeGuideDimensions = 8;
-        Vector2 sizeGuidePos = GetWorldToScreen2D((Vector2){-sizeGuideDimensions, -sizeGuideDimensions}, camera);
-        Vector2 sizeGuideSize = GetWorldToScreen2D((Vector2) {sizeGuideDimensions, sizeGuideDimensions}, camera);
-        Rectangle sizeGuideRect = {sizeGuidePos.x, sizeGuidePos.y, sizeGuideSize.x, sizeGuideSize.y};
-        DrawRectangleLinesEx(sizeGuideRect, 1, BLUE);
+        
+        drawSizeGuide(16, BLUE);
         // Draw a grid of dots around where the camera is
         for (int x = -32; x < 32; x++)
         {
             for (int y = -32; y < 32; y++)
             {
-                DrawRectangleV(
+                DrawPixelV(
                     GetWorldToScreen2D((Vector2) {x, y}, camera),
-                    (Vector2) {1, 1},
                     WHITE);
             }
         }
