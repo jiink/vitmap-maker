@@ -77,6 +77,18 @@ Vitmap* createVitmap()
     return vitmap;
 }
 
+VitmapAnimation* createVitmapAnimation()
+{
+    VitmapAnimation* vitmapAnimation = malloc(sizeof *vitmapAnimation);
+    if (vitmapAnimation == NULL) {
+        return NULL;
+    }
+    vitmapAnimation->numFrames = 0;
+    vitmapAnimation->currentFrame = 0;
+    vitmapAnimation->frames = NULL;
+    return vitmapAnimation;
+}
+
 void addPointToShape(Shape* shape, Vector2 point)
 {
     printf("adding point to shape. current count: %d\n", shape->numPoints);
@@ -206,10 +218,10 @@ Shape* reorderShapeInVitmap(Vitmap* vitmap, Shape* shape, int direction)
 
 Vitmap* addVitmapToAnimation(VitmapAnimation* animation, Vitmap vitmap)
 {
-    animation->vitmaps = (Vitmap*)realloc(animation->vitmaps, (animation->numFrames + 1) * sizeof(Vitmap));
-    animation->vitmaps[animation->numFrames] = vitmap;
+    animation->frames = (Vitmap*)realloc(animation->frames, (animation->numFrames + 1) * sizeof(Vitmap));
+    animation->frames[animation->numFrames] = vitmap;
     animation->numFrames++;
-    return &animation->vitmaps[animation->numFrames];
+    return &animation->frames[animation->numFrames];
 }
 
 void saveVitmapToFile(Vitmap* vitmap, const char* filename)

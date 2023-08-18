@@ -21,7 +21,7 @@ typedef struct Vitmap
 
 typedef struct VitmapAnimation
 {
-    Vitmap* vitmaps;
+    Vitmap* frames;
     int numFrames;
     int currentFrame;
 } VitmapAnimation;
@@ -35,6 +35,7 @@ typedef struct VitmapAnimationSet
 void printVitmap(const Vitmap* vitmap);
 Shape* createShape();
 Vitmap* createVitmap();
+VitmapAnimation* createVitmapAnimation();
 void bakeVitmap(Vitmap* vitmap);
 void addPointToShape(Shape* shape, Vector2 point);
 void removePointFromShape(Shape* shape, Vector2* point);

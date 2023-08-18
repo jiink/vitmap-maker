@@ -39,6 +39,7 @@ Camera2D camera = {
     .zoom = 25
 };
 
+VitmapAnimation* currentAnimation = NULL;
 Vitmap* currentVitmap = NULL;
 Shape* currentShape = NULL;
 Vector2* currentVertex = NULL;
@@ -542,7 +543,7 @@ int main(int argc, char *argv[])
     // Initialization
     //--------------------------------------------------------------------------------------
 
-    
+    currentAnimation = createVitmapAnimation();
     currentVitmap = createVitmap();
     
     if (fileToLoad != NULL)
