@@ -42,7 +42,7 @@ void removePointFromShape(Shape* shape, Vector2* point);
 void addShapeToVitmap(Vitmap* vitmap);
 void removeShapeFromVitmap(Vitmap* vitmap, Shape* shape);
 Shape* reorderShapeInVitmap(Vitmap* vitmap, Shape* shape, int direction);
-Vitmap* addVitmapToAnimation(VitmapAnimation* animation, Vitmap vitmap);
+Vitmap* addFrameToAnimation(VitmapAnimation* animation, Vitmap vitmap);
 void saveVitmapToFile(Vitmap* vitmap, const char* filename);
 Vitmap loadVitmapFromFile(const char* filename);
 Vitmap* loadAndBakeVitmap(const char* filename);

@@ -545,6 +545,7 @@ int main(int argc, char *argv[])
 
     currentAnimation = createVitmapAnimation();
     currentVitmap = createVitmap();
+    addFrameToAnimation(currentAnimation, *currentVitmap);
     
     if (fileToLoad != NULL)
     {
@@ -593,7 +594,7 @@ int main(int argc, char *argv[])
     while (!WindowShouldClose()) // Detect window close button or ESC key
     {
         // Update
-        //currentVitmap = &vitmapAnim.vitmaps[vitmapAnim.currentFrame];
+        currentVitmap = &currentAnimation->frames[currentAnimation->currentFrame];
         //currentShape = &currentVitmap->shapes[currentVitmap->numShapes - 1];
 
         Vector2 mouseDrawAreaPos = GetScreenToWorld2D(GetMousePosition(), camera);
@@ -757,15 +758,17 @@ int main(int argc, char *argv[])
         gridSize = (Vector2){realResolution, realResolution};
 
         // Animation frame slider
-        // if (vitmapAnim.numFrames > 1)
-        // {
-        //     vitmapAnim.currentFrame = (int)roundf(GuiSlider((Rectangle){500, 640, 300, 20}, "0", TextFormat("%d", vitmapAnim.numFrames - 1), vitmapAnim.currentFrame, 0.0, (float)(vitmapAnim.numFrames - 1)));
-        // }
-        // // Animation add frame button
-        // if (GuiButton((Rectangle){816, 640, 20, 20}, "+"))
-        // {
-        //     vitmapAnim.numFrames++;
-        // }
+        if (currentAnimation->numFrames > 1)
+        {
+            currentAnimation->currentFrame = (int)roundf(GuiSlider((Rectangle){500, 640, 300, 20}, "0", TextFormat("%d", currentAnimation->numFrames - 1), currentAnimation->currentFrame, 0.0, (float)(currentAnimation->numFrames - 1)));
+        }
+        // Animation add frame button
+        if (GuiButton((Rectangle){816, 640, 20, 20}, "+"))
+        {
+            addFrameToAnimation(currentAnimation, *createVitmap());
+            currentAnimation->currentFrame = currentAnimation->numFrames - 1;
+            isDrawingShape = false;
+        }
 
         if (isMouseInRect)
         {
@@ -816,6 +819,14 @@ static void SaveButton(Vitmap* vitmap, const char* name)
 static void LoadButton(Vitmap* vitmapOut, const char* name)
 {
     *vitmapOut = loadVitmapFromFile(name);
+}
+static void SaveAnimationButton(VitmapAnimation* animation, const char* name)
+{
+    //saveAnimationToFile(animation, name);
+}
+static void LoadAnimationButton(VitmapAnimation* animationOut, const char* name)
+{
+    //*animationOut = loadAnimationFromFile(name);
 }
 static void LoadOverlay(char* filePath)
 {

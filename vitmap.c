@@ -216,10 +216,10 @@ Shape* reorderShapeInVitmap(Vitmap* vitmap, Shape* shape, int direction)
     return shape;
 }
 
-Vitmap* addVitmapToAnimation(VitmapAnimation* animation, Vitmap vitmap)
+Vitmap* addFrameToAnimation(VitmapAnimation* animation, Vitmap frame)
 {
     animation->frames = (Vitmap*)realloc(animation->frames, (animation->numFrames + 1) * sizeof(Vitmap));
-    animation->frames[animation->numFrames] = vitmap;
+    animation->frames[animation->numFrames] = frame;
     animation->numFrames++;
     return &animation->frames[animation->numFrames];
 }
