@@ -33,7 +33,7 @@ Vector2 gridSize = {16, 16};
 Rectangle drawingArea = {424, 40, 592, 592};
 
 Camera2D camera = {
-    .offset = {0, 0},
+    .offset = {640.0, 360.0},
     .target = {0, 0},
     .rotation = 0,
     .zoom = 25
@@ -56,7 +56,7 @@ Sound pressSound;
 Sound snapSound; 
 Sound slidingSound;
 
-Color ColorPickerValue = {200, 170, 90, 0};
+Color ColorPickerValue = {90, 170, 200, 0};
 Texture2D overlayImg;
 
 //----------------------------------------------------------------------------------
