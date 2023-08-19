@@ -224,6 +224,105 @@ Vitmap* addFrameToAnimation(VitmapAnimation* animation, Vitmap frame)
     return &animation->frames[animation->numFrames];
 }
 
+void saveAnimationToFile(VitmapAnimation* animation, const char* filename)
+{
+    // Open the file in binary write mode
+    FILE* file = fopen(filename, "wb");
+    if (file == NULL)
+    {
+        printf("Failed to open file for writing.\n");
+        return;
+    }
+
+    // Write the number of frames in the animation
+    fwrite(&(animation->numFrames), sizeof(int), 1, file);
+
+    // Write each frame in the animation
+    for (int i = 0; i < animation->numFrames; i++)
+    {
+        Vitmap* frame = &(animation->frames[i]);
+
+        // Write the number of shapes in the frame
+        fwrite(&(frame->numShapes), sizeof(int), 1, file);
+
+        // Write each shape in the frame
+        for (int j = 0; j < frame->numShapes; j++)
+        {
+            Shape* shape = &(frame->shapes[j]);
+
+            // Write the number of points in the shape
+            fwrite(&(shape->numPoints), sizeof(int), 1, file);
+
+            // Write the points of the shape
+            fwrite(shape->points, sizeof(Vector2), shape->numPoints, file);
+
+            // Write the color of the shape
+            fwrite(&(shape->color), sizeof(Color), 1, file);
+        }
+    }
+    // Close the file
+    fclose(file);
+    
+    printf("Animation saved successfully.\n");
+}
+
+VitmapAnimation loadAnimationFromFile(const char* filename)
+{
+    VitmapAnimation animation = *createVitmapAnimation();
+
+    // Open the file in binary read mode
+    FILE* file = fopen(filename, "rb");
+    if (file == NULL)
+    {
+        printf("Failed to open file for reading.\n");
+        return animation;
+    }
+
+    // Read the number of frames in the animation
+    int numFramesInTheFile = 0;
+    fread(&numFramesInTheFile, sizeof(int), 1, file);
+    printf("Number of frames in the file: %d\n", numFramesInTheFile);
+    // Read each vitmap in the animation
+    for (int i = 0; i < numFramesInTheFile; i++)
+    {
+        Vitmap* frame = createVitmap();
+
+        // Read the number of shapes in the frame
+        int numShapesInHere = 0;
+        fread(&numShapesInHere, sizeof(int), 1, file);
+        printf("Number of shapes in this frame: %d\n", numShapesInHere);
+        // Read each shape in the frame
+        for (int j = 0; j < numShapesInHere; j++)
+        {
+            addShapeToVitmap(frame);
+            Shape* shape = &(frame->shapes[frame->numShapes - 1]);
+            
+            // Read the number of points in the shape
+            int numPointsInHere = 0;
+            fread(&(numPointsInHere), sizeof(int), 1, file);
+            printf("Number of points in this shape: %d\n", numPointsInHere);
+            for (int j = 0; j < numPointsInHere; j++)
+            {
+                Vector2 pointToAdd = {0.0f, 0.0f};
+                fread(&pointToAdd, sizeof(Vector2), 1, file);
+                addPointToShape(shape, pointToAdd);
+            }
+            
+            // Read the color of the shape
+            fread(&(shape->color), sizeof(Color), 1, file);
+        }
+
+        addFrameToAnimation(&animation, *frame);
+    }
+
+    // Close the file
+    fclose(file);
+    
+    printf("Animation loaded successfully.\n");
+    
+    return animation;
+}
+
 void saveVitmapToFile(Vitmap* vitmap, const char* filename)
 {
     // Open the file in binary write mode
@@ -261,13 +360,6 @@ void saveVitmapToFile(Vitmap* vitmap, const char* filename)
 Vitmap loadVitmapFromFile(const char* filename)
 {
     Vitmap vitmap = *createVitmap();
-
-    // addShapeToVitmap(&vitmap);
-    // addPointToShape(&vitmap.shapes[0], (Vector2){0.0f, 0.0f});
-    // addPointToShape(&vitmap.shapes[0], (Vector2){1.0f, 1.0f});
-    // addPointToShape(&vitmap.shapes[0], (Vector2){0.0f, 1.0f});
-
-    // printVitmap(&vitmap);
     
     // Open the file in binary read mode
     FILE* file = fopen(filename, "rb");

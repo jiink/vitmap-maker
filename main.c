@@ -64,6 +64,8 @@ Texture2D overlayImg;
 //----------------------------------------------------------------------------------
 static void SaveButton(Vitmap* vitmap, const char* name);
 static void LoadButton(Vitmap* vitmapOut, const char* name);
+static void SaveAnimationButton(VitmapAnimation* animation, const char* name);
+static void LoadAnimationButton(VitmapAnimation* animationOut, const char* name);
 static void LoadOverlay(char* filePath);
 static void DecodeButton();
 static void LabelButton007();
@@ -573,7 +575,7 @@ int main(int argc, char *argv[])
     // vitmapMaker: controls initialization
     //----------------------------------------------------------------------------------
     bool FilePathEditMode = false;
-    char FilePathText[128] = "MyVitmap.vmp";
+    char FilePathText[128] = "TestAnimation.vmpa";
     bool OverlayImgPathEditMode = false;
     char OverlayImgPathText[128] = "overlay.png";
     Color BgGridColor = {50, 50, 50, 255};
@@ -586,8 +588,6 @@ int main(int argc, char *argv[])
     GuiLoadStyle("lavanda.rgs");
 
     PlaySound(slidingSound);
-
-    
 
     // Main game loop
     SetExitKey(KEY_NULL);
@@ -724,12 +724,12 @@ int main(int argc, char *argv[])
         }
         if (GuiButton((Rectangle){24, 48, 120, 24}, "Save Animation..."))
         {
-            
+            SaveAnimationButton(currentAnimation, FilePathText);
             PlaySound(clickSound);
         }
         if (GuiButton((Rectangle){168, 48, 120, 24}, "Load Animation..."))
         {
-            
+            LoadAnimationButton(currentAnimation, FilePathText);
             PlaySound(clickSound);
         }
         if (GuiButton((Rectangle){24, 408, 120, 24}, "Load Overlay"))
@@ -822,11 +822,11 @@ static void LoadButton(Vitmap* vitmapOut, const char* name)
 }
 static void SaveAnimationButton(VitmapAnimation* animation, const char* name)
 {
-    //saveAnimationToFile(animation, name);
+    saveAnimationToFile(animation, name);
 }
 static void LoadAnimationButton(VitmapAnimation* animationOut, const char* name)
 {
-    //*animationOut = loadAnimationFromFile(name);
+    *animationOut = loadAnimationFromFile(name);
 }
 static void LoadOverlay(char* filePath)
 {
