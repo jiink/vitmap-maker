@@ -1,0 +1,277 @@
+:root {
+    --bg-dark: #1e1e1e;
+    --bg-panel: #252526;
+    --bg-header: #333333;
+    --accent: #007acc;
+    --accent-hover: #0098ff;
+    --text-main: #cccccc;
+    --text-light: #ffffff;
+    --border: #3e3e42;
+}
+
+body {
+    margin: 0;
+    overflow: hidden;
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+/* Layout */
+#toolbar {
+    height: 40px;
+    background-color: var(--bg-header);
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    border-bottom: 1px solid var(--border);
+    justify-content: space-between;
+    position: relative;
+}
+
+#project-name {
+    width: min(260px, 24vw);
+    min-width: 80px;
+    margin: 0 10px;
+    text-align: center;
+    font-size: 13px;
+}
+
+@media (max-width: 1250px) {
+    .toolbar-hint { display: none; }
+}
+
+@media (max-width: 900px) {
+    .toolbar-group button .label { display: none; }
+}
+
+#workspace {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+.panel {
+    background-color: var(--bg-panel);
+    width: 250px;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border);
+    border-left: 1px solid var(--border);
+}
+
+.panel-header {
+    padding: 10px;
+    background: var(--bg-header);
+    font-weight: bold;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid var(--border);
+}
+
+.panel-content {
+    padding: 10px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+#canvas-container {
+    flex: 1;
+    position: relative;
+    background-color: #121212;
+    overflow: hidden;
+}
+
+/* Timeline */
+#timeline-area {
+    height: 160px;
+    background-color: var(--bg-panel);
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+}
+
+#timeline-controls {
+    padding: 5px 10px;
+    display: flex;
+    gap: 10px;
+    border-bottom: 1px solid var(--border);
+    align-items: center;
+}
+
+#frames-container {
+    display: flex;
+    padding: 10px;
+    gap: 5px;
+    overflow-x: auto;
+    flex: 1;
+}
+
+.frame {
+    min-width: 40px;
+    height: 60px;
+    background: #333;
+    border: 2px solid #555;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 12px;
+    color: #888;
+    position: relative;
+}
+
+.frame.active {
+    border-color: var(--accent);
+    background: #444;
+    color: #fff;
+}
+
+/* UI Elements */
+button {
+    background: #444;
+    border: 1px solid #555;
+    color: #eee;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 3px;
+    font-size: 12px;
+}
+
+button:hover { background: #555; }
+button.active { background: var(--accent); border-color: var(--accent); }
+button:disabled { opacity: 0.5; cursor: default; }
+
+.tool-group {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 10px;
+}
+
+.tool-btn {
+    flex: 1;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.row { display: flex; gap: 5px; margin-bottom: 10px; align-items: center;}
+#transform-controls {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px;
+    margin-bottom: 10px;
+}
+input[type="number"], input[type="text"] {
+    background: #111;
+    border: 1px solid #555;
+    color: #fff;
+    padding: 4px;
+    width: 100%;
+}
+
+input[type="color"] {
+    border: none;
+    width: 100%;
+    height: 30px;
+    cursor: pointer;
+    background: none;
+}
+
+#color-picker {
+    flex: 0 0 38px;
+    width: 38px;
+    padding: 0;
+}
+
+#color-hex {
+    flex: 1;
+    min-width: 0;
+    text-transform: uppercase;
+}
+
+/* Layer List */
+.layer-item {
+    display: flex;
+    align-items: center;
+    padding: 5px;
+    background: #333;
+    margin-bottom: 2px;
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+.layer-item:hover { background: #3e3e3e; }
+.layer-item.selected { border-color: var(--accent); background: #3e3e42; }
+.layer-color { width: 12px; height: 12px; border-radius: 2px; margin-right: 8px; border: 1px solid #fff; }
+.layer-name { flex: 1; font-size: 12px; }
+
+/* Action List */
+.action-item {
+    padding: 5px;
+    cursor: pointer;
+    display: flex; 
+    justify-content: space-between;
+    align-items: center;
+}
+.action-item:hover { background: #444; }
+.action-item.active { color: var(--accent); font-weight: bold; }
+
+.action-delete-btn {
+    padding: 2px 6px;
+    color: #666;
+    border-radius: 3px;
+}
+.action-delete-btn:hover {
+    color: #ff5555;
+    background: #333;
+}
+
+
+/* Toolbar */
+.toolbar-group { display: flex; gap: 10px; align-items: center; }
+.brand { font-weight: 900; color: var(--accent); margin-right: 10px; }
+.brand small { color: #666; font-weight: normal; }
+.toolbar-hint { font-size: 12px; color: #666; }
+.hidden { display: none; }
+
+/* Panels */
+.panel-subheader { margin: 10px -10px; }
+.full-width { width: 100%; }
+#actions-panel { flex: 0 0 150px; border-bottom: 1px solid var(--border); }
+.action-name { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+.action-name small { color: #666; }
+.action-buttons { display: flex; gap: 5px; }
+.action-buttons i { padding: 2px 5px; color: #888; }
+#layer-buttons { padding: 10px; border-top: 1px solid var(--border); display: flex; gap: 5px; }
+#layer-buttons button { flex: 1; }
+
+/* Timeline */
+.separator { border-right: 1px solid #555; height: 20px; margin: 0 10px; }
+.spacer { flex: 1; }
+#fps-input { width: 40px; }
+
+/* Toast */
+#toast {
+    position: fixed;
+    bottom: 180px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-header);
+    border: 1px solid var(--border);
+    color: var(--text-light);
+    padding: 8px 14px;
+    border-radius: 4px;
+    font-size: 13px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    z-index: 10;
+}
+#toast.visible { opacity: 1; }
+#toast.warn { border-color: #d7ba7d; }
