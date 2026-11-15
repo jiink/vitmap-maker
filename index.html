@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vitmap Editor - Web</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #1e1e1e;
+            --bg-panel: #252526;
+            --bg-header: #333333;
+            --accent: #007acc;
+            --accent-hover: #0098ff;
+            --text-main: #cccccc;
+            --text-light: #ffffff;
+            --border: #3e3e42;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Layout */
+        #toolbar {
+            height: 40px;
+            background-color: var(--bg-header);
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            border-bottom: 1px solid var(--border);
+            justify-content: space-between;
+            position: relative;
+        }
+
+        #project-name {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(260px, 24vw);
+            text-align: center;
+            font-size: 13px;
+        }
+
+        @media (max-width: 900px) {
+            #toolbar > div:last-child { display: none; }
+            #project-name { width: min(200px, 25vw); }
+        }
+
+        #workspace {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .panel {
+            background-color: var(--bg-panel);
+            width: 250px;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border);
+            border-left: 1px solid var(--border);
+        }
+
+        .panel-header {
+            padding: 10px;
+            background: var(--bg-header);
+            font-weight: bold;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .panel-content {
+            padding: 10px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        #canvas-container {
+            flex: 1;
+            position: relative;
+            background-color: #121212;
+            overflow: hidden;
+        }
+
+        /* Timeline */
+        #timeline-area {
+            height: 160px;
+            background-color: var(--bg-panel);
+            border-top: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+        }
+
+        #timeline-controls {
+            padding: 5px 10px;
+            display: flex;
+            gap: 10px;
+            border-bottom: 1px solid var(--border);
+            align-items: center;
+        }
+
+        #frames-container {
+            display: flex;
+            padding: 10px;
+            gap: 5px;
+            overflow-x: auto;
+            flex: 1;
+        }
+
+        .frame {
+            min-width: 40px;
+            height: 60px;
+            background: #333;
+            border: 2px solid #555;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 12px;
+            color: #888;
+            position: relative;
+        }
+
+        .frame.active {
+            border-color: var(--accent);
+            background: #444;
+            color: #fff;
+        }
+
+        /* UI Elements */
+        button {
+            background: #444;
+            border: 1px solid #555;
+            color: #eee;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+
+        button:hover { background: #555; }
+        button.active { background: var(--accent); border-color: var(--accent); }
+        button:disabled { opacity: 0.5; cursor: default; }
+
+        .tool-group {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .tool-btn {
+            flex: 1;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .row { display: flex; gap: 5px; margin-bottom: 10px; align-items: center;}
+        #transform-controls {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        input[type="number"], input[type="text"] {
+            background: #111;
+            border: 1px solid #555;
+            color: #fff;
+            padding: 4px;
+            width: 100%;
+        }
+
+        input[type="color"] {
+            border: none;
+            width: 100%;
+            height: 30px;
+            cursor: pointer;
+            background: none;
+        }
+
+        #color-picker {
+            flex: 0 0 38px;
+            width: 38px;
+            padding: 0;
+        }
+
+        #color-hex {
+            flex: 1;
+            min-width: 0;
+            text-transform: uppercase;
+        }
+
+        /* Layer List */
+        .layer-item {
+            display: flex;
+            align-items: center;
+            padding: 5px;
+            background: #333;
+            margin-bottom: 2px;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+        .layer-item:hover { background: #3e3e3e; }
+        .layer-item.selected { border-color: var(--accent); background: #3e3e42; }
+        .layer-color { width: 12px; height: 12px; border-radius: 2px; margin-right: 8px; border: 1px solid #fff; }
+        .layer-name { flex: 1; font-size: 12px; }
+
+        /* Action List */
+        .action-item {
+            padding: 5px;
+            cursor: pointer;
+            display: flex; 
+            justify-content: space-between;
+            align-items: center;
+        }
+        .action-item:hover { background: #444; }
+        .action-item.active { color: var(--accent); font-weight: bold; }
+
+        .action-delete-btn {
+            padding: 2px 6px;
+            color: #666;
+            border-radius: 3px;
+        }
+        .action-delete-btn:hover {
+            color: #ff5555;
+            background: #333;
+        }
+
+    </style>
+</head>
+<body>
+
+<!-- TOP TOOLBAR -->
+<div id="toolbar">
+    <div style="display:flex; gap: 10px; align-items: center;">
+        <span style="font-weight:900; color:var(--accent); margin-right: 10px;">VITMAP <small style="color:#666; font-weight:normal;">WEB</small></span>
+        <button onclick="project.saveToJSON()"><i class="fas fa-save"></i> Save JSON</button>
+        <button onclick="document.getElementById('file-input').click()"><i class="fas fa-folder-open"></i> Load JSON</button>
+        <input type="file" id="file-input" style="display:none" onchange="project.loadFromJSON(this)">
+    </div>
+    <input type="text" id="project-name" aria-label="Vitmap name" placeholder="Vitmap name"
+        oninput="project.name = this.value; project.isDirty = true">
+    <div style="font-size: 12px; color: #666;">
+        Drag & Drop Image for Reference • Middle Click Pan • Scroll Zoom
+    </div>
+</div>
+
+<div id="workspace">
+    <!-- LEFT PANEL: TOOLS -->
+    <div class="panel">
+        <div class="panel-header">Tools</div>
+        <div class="panel-content">
+            <div class="tool-group">
+                <button class="tool-btn active" id="btn-select" onclick="editor.setTool('select')">
+                    <i class="fas fa-mouse-pointer"></i> Select
+                </button>
+                <button class="tool-btn" id="btn-draw" onclick="editor.setTool('draw')">
+                    <i class="fas fa-pen-nib"></i> Draw
+                </button>
+                <button class="tool-btn" id="btn-circle" onclick="editor.setTool('circle')">
+                    <i class="fas fa-circle"></i> Circle
+                </button>
+            </div>
+            <div class="row">
+                <label for="circle-sides">Circle sides</label>
+                <input type="number" id="circle-sides" min="3" max="256" step="1" value="32">
+            </div>
+            
+            <div class="panel-header" style="margin: 10px -10px 10px -10px;">Properties</div>
+            
+            <div class="row">
+                <label>Color</label>
+                <input type="color" id="color-picker" value="#00aaff" oninput="editor.setColor(this.value)">
+                <input type="text" id="color-hex" value="00AAFF" aria-label="Color hex value"
+                    placeholder="6D4746" maxlength="7" spellcheck="false"
+                    oninput="editor.setColor(this.value)">
+            </div>
+            <div class="row">
+                <label for="editor-background-color">Editor background</label>
+                <input type="color" id="editor-background-color" value="#121212"
+                    oninput="editor.setBackgroundColor(this.value)">
+            </div>
+            <div class="row">
+                <label>Alpha</label>
+                <input type="range" id="alpha-slider" min="0" max="255" value="255" oninput="editor.setAlpha(this.value)">
+            </div>
+            <div class="row">
+                <label for="border-width">Border width</label>
+                <input type="number" id="border-width" min="0" step="0.1" value="0" oninput="editor.setBorderWidth(this.value)">
+            </div>
+            <div class="row">
+                <label for="border-color">Border color</label>
+                <input type="color" id="border-color" value="#ffffff" oninput="editor.setBorderColor(this.value)">
+            </div>
+            <div class="row">
+                <input type="checkbox" id="shape-open" onchange="editor.setOpen(this.checked)">
+                <label for="shape-open">Open (border only)</label>
+            </div>
+
+            <div class="panel-header" style="margin: 10px -10px 10px -10px;">Transform</div>
+            <div id="transform-controls">
+                <button onclick="editor.transformSelectedShapes('mirror-horizontal')" title="Mirror horizontally" aria-label="Mirror horizontally">
+                    <i class="fas fa-arrows-left-right"></i> Mirror H
+                </button>
+                <button onclick="editor.transformSelectedShapes('mirror-vertical')" title="Mirror vertically" aria-label="Mirror vertically">
+                    <i class="fas fa-arrows-up-down"></i> Mirror V
+                </button>
+                <button onclick="editor.transformSelectedShapes('rotate-left')" title="Rotate left 45 degrees" aria-label="Rotate left 45 degrees">
+                    <i class="fas fa-rotate-left"></i> Rotate Left 45°
+                </button>
+                <button onclick="editor.transformSelectedShapes('rotate-right')" title="Rotate right 45 degrees" aria-label="Rotate right 45 degrees">
+                    <i class="fas fa-rotate-right"></i> Rotate Right 45°
+                </button>
+                <button onclick="editor.snapSelectedShapesToGrid()" title="Snap all selected points to the nearest grid point" aria-label="Snap selection to grid">
+                    <i class="fas fa-magnet"></i> Snap to Grid
+                </button>
+            </div>
+
+            <div class="panel-header" style="margin: 10px -10px 10px -10px;">Grid</div>
+            
+            <div class="row">
+                <label>Size</label>
+                <input type="number" id="grid-size" value="16" onchange="editor.gridSize = parseInt(this.value); editor.render();">
+            </div>
+            <div class="row">
+                <input type="checkbox" id="grid-visible" checked onchange="editor.showGrid = this.checked; editor.render();">
+                <label for="grid-visible">Show Grid</label>
+            </div>
+            <div class="row">
+                <input type="checkbox" id="snap-check" checked onchange="editor.snapToGrid = this.checked">
+                <label for="snap-check">Snap to Grid</label>
+            </div>
+            <div class="row">
+                <input type="checkbox" id="ref-check" onchange="editor.showRefScale = this.checked; editor.render();">
+                <label for="ref-check">Show Scale Ref (16x16)</label>
+            </div>
+            
+            <div class="panel-header" style="margin: 10px -10px 10px -10px;">Overlay</div>
+            <div class="row">
+                <label>Opacity</label>
+                <input type="range" min="0" max="1" step="0.1" value="0.3" oninput="editor.overlayOpacity = parseFloat(this.value); editor.render();">
+            </div>
+            <div class="row">
+                <label>Scale</label>
+                <input type="range" min="0.1" max="5" step="0.1" value="1" oninput="editor.overlayScale = parseFloat(this.value); editor.render();">
+            </div>
+            <div class="row">
+                <label>Pos X</label>
+                <input type="range" min="-200" max="200" step="1" value="0" oninput="editor.overlayX = parseInt(this.value); editor.render();">
+            </div>
+            <div class="row">
+                <label>Pos Y</label>
+                <input type="range" min="-200" max="200" step="1" value="0" oninput="editor.overlayY = parseInt(this.value); editor.render();">
+            </div>
+            <button onclick="editor.clearOverlay()" style="width:100%">Clear Overlay</button>
+        </div>
+    </div>
+
+    <!-- CANVAS -->
+    <div id="canvas-container">
+        <canvas id="main-canvas"></canvas>
+    </div>
+
+    <!-- RIGHT PANEL: LAYERS & ANIMATIONS -->
+    <div class="panel">
+        <div class="panel-header">Animations (Actions)</div>
+        <div class="panel-content" style="flex: 0 0 150px; border-bottom: 1px solid var(--border);">
+            <div class="row">
+                <input type="text" id="new-action-name" placeholder="Name (e.g. Run)">
+                <button onclick="project.createAction()"><i class="fas fa-plus"></i></button>
+            </div>
+            <div id="action-list"></div>
+        </div>
+
+        <div class="panel-header">Shapes (Current Frame)</div>
+        <div class="panel-content" id="layer-list">
+            <!-- Populated by JS -->
+        </div>
+        <div style="padding: 10px; border-top: 1px solid var(--border); display: flex; gap: 5px;">
+            <button onclick="editor.deleteSelectedShape()" style="flex:1" title="Delete Shape"><i class="fas fa-trash"></i></button>
+            <button onclick="editor.moveShapeOrder(-1)" style="flex:1" title="Move Down"><i class="fas fa-arrow-down"></i></button>
+            <button onclick="editor.moveShapeOrder(1)" style="flex:1" title="Move Up"><i class="fas fa-arrow-up"></i></button>
+        </div>
+    </div>
+</div>
+
+<!-- BOTTOM TIMELINE -->
+<div id="timeline-area">
+    <div id="timeline-controls">
+        <button onclick="editor.togglePlay()"><i id="play-icon" class="fas fa-play"></i></button>
+        <div style="border-right: 1px solid #555; height: 20px; margin: 0 10px;"></div>
+        <button onclick="project.addFrame()"><i class="fas fa-plus-square"></i> New Frame</button>
+        <button onclick="project.duplicateFrame()"><i class="fas fa-copy"></i> Clone Frame</button>
+        <button onclick="project.deleteFrame()"><i class="fas fa-trash-alt"></i> Delete Frame</button>
+        <div style="flex:1"></div>
+        <label><input type="checkbox" onchange="editor.onionSkin = this.checked; editor.render();"> Onion Skin</label>
+        <div style="border-right: 1px solid #555; height: 20px; margin: 0 10px;"></div>
+        <label>FPS: <input type="number" value="12" style="width: 40px;" onchange="editor.fps = parseInt(this.value)"></label>
+    </div>
+    <div id="frames-container">
+        <!-- Frames injected here -->
+    </div>
+</div>
+
+<script>
+/**
+ * VITMAP WEB EDITOR - UPDATED
+ */
+
+// --- DATA STRUCTURES ---
+class Vec2 { constructor(x, y) { this.x = x; this.y = y; } }
+class Shape {
+    constructor() {
+        this.points = []; 
+        this.color = { r: 0, g: 170, b: 255, a: 255 };
+        this.borderWidth = 0;
+        this.borderColor = { r: 255, g: 255, b: 255 };
+        this.open = false;
+    }
+}
+class Frame { constructor() { this.shapes = []; } }
+class Action {
+    constructor(name) {
+        this.name = name;
+        this.frames = [new Frame()];
+        this.loop = true;
+    }
+}
+
+// --- APP STATE ---
+
+const canvas = document.getElementById('main-canvas');
+const ctx = canvas.getContext('2d');
+
+const project = {
+    actions: [],
+    currentActionIndex: 0,
+    name: "animation",
+    isDirty: false,
+    
+    init() {
+        this.actions = [new Action("Default")];
+        this.currentActionIndex = 0;
+        document.getElementById('project-name').value = this.name;
+        this.isDirty = false;
+        this.refreshUI();
+    },
+
+    getCurrentAction() { return this.actions[this.currentActionIndex]; },
+    getCurrentFrame() { return this.getCurrentAction().frames[editor.currentFrameIndex]; },
+
+    createAction() {
+        const nameInput = document.getElementById('new-action-name');
+        const name = nameInput.value || "Untitled";
+        this.actions.push(new Action(name));
+        this.currentActionIndex = this.actions.length - 1;
+        editor.currentFrameIndex = 0;
+        editor.selectedShapes = []; // UPDATED
+        nameInput.value = "";
+        this.isDirty = true;
+        this.refreshUI();
+        editor.render();
+    },
+
+    // NEW: Delete Action
+    deleteAction(index) {
+        if (this.actions.length <= 1) {
+            alert("At least one action is required.");
+            return;
+        }
+        if (!confirm(`Delete action "${this.actions[index].name}"?`)) return;
+        
+        this.actions.splice(index, 1);
+        if (this.currentActionIndex >= this.actions.length) {
+            this.currentActionIndex = this.actions.length - 1;
+        }
+        editor.currentFrameIndex = 0;
+        editor.selectedShapes = [];
+        this.isDirty = true;
+        this.refreshUI();
+        editor.render();
+    },
+
+    selectAction(index) {
+        this.currentActionIndex = index;
+        editor.currentFrameIndex = 0;
+        editor.selectedShapes = []; // UPDATED
+        this.refreshUI();
+        editor.render();
+    },
+
+    renameAction(index) {
+        const newName = prompt("Enter new name for this action:", this.actions[index].name);
+        if (newName && newName.trim() !== "") {
+            this.actions[index].name = newName.trim();
+            this.refreshUI();
+        }
+    },
+
+    addFrame() {
+        this.getCurrentAction().frames.push(new Frame());
+        editor.currentFrameIndex = this.getCurrentAction().frames.length - 1;
+        editor.selectedShapes = []; // UPDATED
+        this.isDirty = true;
+        this.refreshUI();
+        editor.render();
+    },
+
+    duplicateFrame() {
+        const action = this.getCurrentAction();
+        const currentFrame = action.frames[editor.currentFrameIndex];
+        const newFrame = new Frame();
+        newFrame.shapes = JSON.parse(JSON.stringify(currentFrame.shapes));
+        
+        action.frames.splice(editor.currentFrameIndex + 1, 0, newFrame);
+        editor.currentFrameIndex++;
+        editor.selectedShapes = []; // UPDATED
+        this.isDirty = true;
+        this.refreshUI();
+        editor.render();
+    },
+
+    deleteFrame() {
+        const action = this.getCurrentAction();
+        if (action.frames.length <= 1) return; 
+        action.frames.splice(editor.currentFrameIndex, 1);
+        if (editor.currentFrameIndex >= action.frames.length) {
+            editor.currentFrameIndex = action.frames.length - 1;
+        }
+        editor.selectedShapes = []; // UPDATED
+        this.isDirty = true;
+        this.refreshUI();
+        editor.render();
+    },
+
+    saveToJSON() {
+        const name = this.name.trim() || "untitled";
+        this.name = name;
+        document.getElementById('project-name').value = name;
+        const data = { meta: { version: "1.0", name }, actions: this.actions };
+        const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `${name.replace(/[<>:"/\\|?*\x00-\x1f]/g, "_").replace(/[. ]+$/, "") || "untitled"}.json`;
+        a.click();
+        this.isDirty = false;
+    },
+
+    loadFromJSON(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+                if (data.actions) {
+                    this.actions = data.actions;
+                    this.name = data.meta && typeof data.meta.name === 'string'
+                        ? data.meta.name
+                        : file.name.replace(/\.json$/i, '');
+                    document.getElementById('project-name').value = this.name;
+                    this.actions.forEach(action => action.frames.forEach(frame => frame.shapes.forEach(shape => {
+                        if (shape.open === undefined) shape.open = shape.closed === false;
+                        delete shape.closed;
+                    })));
+                    this.currentActionIndex = 0;
+                    editor.currentFrameIndex = 0;
+                    editor.selectedShapes = []; // UPDATED
+                    this.isDirty = false;
+                    this.refreshUI();
+                    editor.render();
+                }
+            } catch (err) { alert("Error parsing JSON"); }
+        };
+        reader.readAsText(file);
+    },
+
+refreshUI() {
+        // Refresh Action List with DELETE and RENAME BUTTONS
+        const list = document.getElementById('action-list');
+        list.innerHTML = '';
+        this.actions.forEach((act, idx) => {
+            const div = document.createElement('div');
+            div.className = `action-item ${idx === this.currentActionIndex ? 'active' : ''}`;
+            
+            // Added Rename Icon and prevent event bubbling
+            div.innerHTML = `
+                <span style="flex:1; overflow:hidden; text-overflow:ellipsis;">${act.name} <small style="color:#666">(${act.frames.length}f)</small></span> 
+                <div style="display:flex; gap:5px;">
+                    <i class="fas fa-edit action-btn" title="Rename" style="padding:2px 5px; color:#888;"></i>
+                    <i class="fas fa-trash action-delete-btn" title="Delete" style="padding:2px 5px; color:#888;"></i>
+                </div>
+            `;
+            
+            div.onclick = (e) => {
+                // Handle button clicks vs row selection
+                if (e.target.classList.contains('action-delete-btn') || e.target.closest('.action-delete-btn')) {
+                    this.deleteAction(idx);
+                } else if (e.target.classList.contains('fa-edit') || e.target.closest('.fa-edit')) {
+                    this.renameAction(idx);
+                } else {
+                    this.selectAction(idx);
+                }
+            };
+            list.appendChild(div);
+        });
+
+        // Refresh Frames Timeline
+        const frameCont = document.getElementById('frames-container');
+        frameCont.innerHTML = '';
+        const currentAction = this.getCurrentAction();
+        currentAction.frames.forEach((frm, idx) => {
+            const div = document.createElement('div');
+            div.className = `frame ${idx === editor.currentFrameIndex ? 'active' : ''}`;
+            div.innerText = idx + 1;
+            div.onclick = () => { 
+                editor.currentFrameIndex = idx; 
+                editor.selectedShapes = []; // UPDATED
+                editor.render(); 
+                project.refreshUI(); 
+            };
+            frameCont.appendChild(div);
+        });
+
+        // Refresh Layer List (Multi-select)
+        const layerList = document.getElementById('layer-list');
+        layerList.innerHTML = '';
+        const currentFrame = this.getCurrentFrame();
+        editor.syncPropertyInputs();
+        [...currentFrame.shapes].reverse().forEach((shape, revIdx) => {
+            const realIdx = currentFrame.shapes.length - 1 - revIdx;
+            const div = document.createElement('div');
+            const isSelected = editor.selectedShapes.includes(shape);
+            div.className = `layer-item ${isSelected ? 'selected' : ''}`;
+            
+            const c = shape.color;
+            const rgba = `rgba(${c.r},${c.g},${c.b},${c.a/255})`;
+            
+            div.innerHTML = `
+                <div class="layer-color" style="background:${rgba}"></div>
+                <div class="layer-name">Shape ${realIdx} (${shape.points.length} pts)</div>
+                <i class="fas fa-eye"></i>
+            `;
+            // UPDATED CLICK HANDLER
+            div.onclick = (e) => {
+                editor.tool = 'select';
+                if (e.shiftKey) {
+                    const idx = editor.selectedShapes.indexOf(shape);
+                    if (idx > -1) editor.selectedShapes.splice(idx, 1);
+                    else editor.selectedShapes.push(shape);
+                } else {
+                    editor.selectedShapes = [shape];
+                }
+                
+                if (editor.selectedShapes.length === 1) {
+                    const s = editor.selectedShapes[0];
+                    editor.syncColorInputs(s.color);
+                    document.getElementById('alpha-slider').value = s.color.a;
+                }
+                
+                editor.updateButtonStates();
+                editor.render();
+                project.refreshUI();
+            };
+            layerList.appendChild(div);
+        });
+    }
+};
+
+const editor = {
+    camera: { x: 0, y: 0, zoom: 20 },
+    tool: 'select', 
+    gridSize: 16,
+    showGrid: true,
+    snapToGrid: true,
+    showRefScale: false,
+    overlayImage: null,
+    overlayOpacity: 0.3,
+    overlayScale: 1.0,
+    overlayX: 0,
+    overlayY: 0,
+    backgroundColor: '#121212',
+    
+    currentFrameIndex: 0,
+    fps: 12,
+    isPlaying: false,
+    lastDrawTime: 0,
+    onionSkin: false,
+
+    selectedShapes: [], // UPDATED: Changed from single object to array
+    clipboard: [], // NEW: Clipboard
+    selectedPointIndex: -1, 
+    isDragging: false,
+    isPanning: false,
+    dragStart: { x: 0, y: 0 },
+    mouseWorld: { x: 0, y: 0 },
+    drawingShape: null,
+    circleStart: null,
+    borderWidth: 0,
+    borderColor: { r: 255, g: 255, b: 255 },
+    open: false,
+
+    init() {
+        this.resize();
+        window.addEventListener('resize', () => this.resize());
+        this.startLoop();
+    },
+
+    resize() {
+        canvas.width = document.getElementById('canvas-container').clientWidth;
+        canvas.height = document.getElementById('canvas-container').clientHeight;
+        this.camera.x = canvas.width / 2;
+        this.camera.y = canvas.height / 2;
+        this.render();
+    },
+
+    setTool(t) {
+        if (this.tool === 'circle' && t !== 'circle') {
+            this.drawingShape = null;
+            this.circleStart = null;
+        }
+        this.tool = t;
+        if (t === 'draw') {
+            if (this.selectedShapes.length === 1) {
+                const shape = this.selectedShapes[0];
+                this.borderWidth = shape.borderWidth ?? 0;
+                const color = shape.borderColor || shape.color;
+                this.borderColor = { r: color.r, g: color.g, b: color.b };
+                this.open = !!shape.open;
+            }
+            this.selectedShapes = [];
+            this.selectedPointIndex = -1;
+        }
+        this.updateButtonStates();
+        this.syncPropertyInputs();
+        this.render();
+    },
+
+    setBackgroundColor(color) {
+        this.backgroundColor = color;
+        this.render();
+    },
+
+    updateButtonStates() {
+        document.getElementById('btn-select').className = `tool-btn ${this.tool === 'select' ? 'active' : ''}`;
+        document.getElementById('btn-draw').className = `tool-btn ${this.tool === 'draw' ? 'active' : ''}`;
+        document.getElementById('btn-circle').className = `tool-btn ${this.tool === 'circle' ? 'active' : ''}`;
+    },
+
+    createShapeFromProperties() {
+        const shape = new Shape();
+        const rgb = hexToRgb(document.getElementById('color-picker').value);
+        const borderRgb = hexToRgb(document.getElementById('border-color').value);
+        shape.color = {
+            r: rgb.r,
+            g: rgb.g,
+            b: rgb.b,
+            a: parseInt(document.getElementById('alpha-slider').value)
+        };
+        shape.borderWidth = Math.max(0, Number(document.getElementById('border-width').value) || 0);
+        shape.borderColor = { r: borderRgb.r, g: borderRgb.g, b: borderRgb.b };
+        shape.open = document.getElementById('shape-open').checked;
+        return shape;
+    },
+
+    updateCircleShape(endPoint) {
+        if (!this.drawingShape || !this.circleStart) return;
+        const radius = Math.hypot(endPoint.x - this.circleStart.x, endPoint.y - this.circleStart.y);
+        const sidesInput = document.getElementById('circle-sides');
+        const sides = Math.min(256, Math.max(3, Math.floor(Number(sidesInput.value) || 32)));
+        sidesInput.value = sides;
+        this.drawingShape.points = Array.from({ length: sides }, (_, i) => {
+            const angle = (i / sides) * Math.PI * 2;
+            return {
+                x: this.circleStart.x + Math.cos(angle) * radius,
+                y: this.circleStart.y + Math.sin(angle) * radius
+            };
+        });
+    },
+
+    setColor(hex) {
+        const normalizedHex = normalizeHexColor(hex);
+        if (!normalizedHex) return;
+        const colorHex = `#${normalizedHex}`;
+        document.getElementById('color-picker').value = colorHex;
+        document.getElementById('color-hex').value = normalizedHex;
+        const rgb = hexToRgb(colorHex);
+        const alpha = parseInt(document.getElementById('alpha-slider').value);
+        const col = { r: rgb.r, g: rgb.g, b: rgb.b, a: alpha };
+        
+        // CHANGE: Only apply color to existing selection if using the SELECT tool.
+        // In DRAW tool, picking a color should only affect the brush (inputs) for the next shape.
+        if (this.tool === 'select' && this.selectedShapes.length > 0) {
+            this.selectedShapes.forEach(s => s.color = {...col});
+            project.isDirty = true;
+            this.render();
+            project.refreshUI();
+        }
+    },
+
+    syncColorInputs(color) {
+        const hex = typeof color === 'string'
+            ? normalizeHexColor(color)
+            : rgbToHex(color.r, color.g, color.b).slice(1);
+        if (!hex) return;
+        document.getElementById('color-picker').value = `#${hex}`;
+        document.getElementById('color-hex').value = hex;
+    },
+
+    setAlpha(val) {
+        // CHANGE: Same logic for Alpha. Only update shape if in SELECT tool.
+        if (this.tool === 'select' && this.selectedShapes.length > 0) {
+            this.selectedShapes.forEach(s => s.color.a = parseInt(val));
+            project.isDirty = true;
+            this.render();
+            project.refreshUI(); 
+        }
+    },
+
+    syncPropertyInputs() {
+        const shape = this.selectedShapes.length === 1 ? this.selectedShapes[0] : null;
+        this.syncColorInputs(shape ? shape.color : document.getElementById('color-picker').value);
+        const width = shape ? (shape.borderWidth ?? 0) : this.borderWidth;
+        const color = shape ? (shape.borderColor || shape.color) : this.borderColor;
+        document.getElementById('border-width').value = width;
+        document.getElementById('border-color').value = rgbToHex(color.r, color.g, color.b);
+        document.getElementById('shape-open').checked = shape ? !!shape.open : this.open;
+    },
+
+    setBorderWidth(value) {
+        const width = Math.max(0, Number(value) || 0);
+        if (this.tool === 'select' && this.selectedShapes.length > 0) {
+            this.selectedShapes.forEach(shape => shape.borderWidth = width);
+            project.isDirty = true;
+            this.render();
+        } else {
+            this.borderWidth = width;
+        }
+    },
+
+    setBorderColor(hex) {
+        const rgb = hexToRgb(hex);
+        const color = { r: rgb.r, g: rgb.g, b: rgb.b };
+        if (this.tool === 'select' && this.selectedShapes.length > 0) {
+            this.selectedShapes.forEach(shape => shape.borderColor = { ...color });
+            project.isDirty = true;
+            this.render();
+        } else {
+            this.borderColor = color;
+        }
+    },
+
+    setOpen(open) {
+        if (this.tool === 'select' && this.selectedShapes.length > 0) {
+            this.selectedShapes.forEach(shape => shape.open = open);
+            project.isDirty = true;
+            this.render();
+        } else {
+            this.open = open;
+        }
+    },
+
+    transformSelectedShapes(transform) {
+        if (this.selectedShapes.length === 0) return;
+        let minX = Infinity;
+        let maxX = -Infinity;
+        let minY = Infinity;
+        let maxY = -Infinity;
+        this.selectedShapes.forEach(shape => {
+            shape.points.forEach(point => {
+                minX = Math.min(minX, point.x);
+                maxX = Math.max(maxX, point.x);
+                minY = Math.min(minY, point.y);
+                maxY = Math.max(maxY, point.y);
+            });
+        });
+        if (minX === Infinity) return;
+
+        const centerX = (minX + maxX) / 2;
+        const centerY = (minY + maxY) / 2;
+        const angle = transform === 'rotate-left'
+            ? -Math.PI / 4
+            : transform === 'rotate-right' ? Math.PI / 4 : 0;
+
+        this.selectedShapes.forEach(shape => {
+            shape.points.forEach(point => {
+                const x = point.x - centerX;
+                const y = point.y - centerY;
+                if (transform === 'mirror-horizontal') {
+                    point.x = centerX - x;
+                } else if (transform === 'mirror-vertical') {
+                    point.y = centerY - y;
+                } else {
+                    point.x = centerX + x * Math.cos(angle) - y * Math.sin(angle);
+                    point.y = centerY + x * Math.sin(angle) + y * Math.cos(angle);
+                }
+            });
+        });
+
+        project.isDirty = true;
+        this.render();
+    },
+
+    snapSelectedShapesToGrid() {
+        if (this.selectedShapes.length === 0) return;
+        this.selectedShapes.forEach(shape => {
+            shape.points.forEach(point => {
+                point.x = Math.round(point.x);
+                point.y = Math.round(point.y);
+            });
+        });
+        project.isDirty = true;
+        this.render();
+    },
+
+
+    deleteSelectedShape() {
+        if (this.selectedShapes.length === 0) return;
+        const frame = project.getCurrentFrame();
+        const selectedIndices = this.selectedShapes
+            .map(shape => frame.shapes.indexOf(shape))
+            .filter(index => index !== -1);
+        if (selectedIndices.length === 0) return;
+        const nextListPosition = Math.min(...selectedIndices.map(index => frame.shapes.length - 1 - index));
+        
+        this.selectedShapes.forEach(shape => {
+            const idx = frame.shapes.indexOf(shape);
+            if (idx > -1) frame.shapes.splice(idx, 1);
+        });
+        
+        const nextIndex = frame.shapes.length - 1 - Math.min(nextListPosition, frame.shapes.length - 1);
+        this.selectedShapes = frame.shapes.length > 0 ? [frame.shapes[nextIndex]] : [];
+        this.selectedPointIndex = -1;
+        project.isDirty = true;
+        this.syncPropertyInputs();
+        this.render();
+        project.refreshUI();
+    },
+
+    moveShapeOrder(dir) {
+        // Only move if single selection for simplicity
+        if (this.selectedShapes.length !== 1) return;
+        const shape = this.selectedShapes[0];
+        const frame = project.getCurrentFrame();
+        const idx = frame.shapes.indexOf(shape);
+        if (idx === -1) return;
+
+        const newIdx = idx + dir;
+        if (newIdx >= 0 && newIdx < frame.shapes.length) {
+            [frame.shapes[idx], frame.shapes[newIdx]] = [frame.shapes[newIdx], frame.shapes[idx]];
+            project.isDirty = true;
+            this.render();
+            project.refreshUI();
+        }
+    },
+
+    togglePlay() {
+        this.isPlaying = !this.isPlaying;
+        document.getElementById('play-icon').className = this.isPlaying ? "fas fa-pause" : "fas fa-play";
+    },
+
+    startLoop() {
+        const loop = (time) => {
+            if (this.isPlaying) {
+                if (time - this.lastDrawTime > (1000 / this.fps)) {
+                    const act = project.getCurrentAction();
+                    this.currentFrameIndex = (this.currentFrameIndex + 1) % act.frames.length;
+                    this.lastDrawTime = time;
+                    project.refreshUI();
+                    this.render();
+                }
+            }
+            requestAnimationFrame(loop);
+        };
+        requestAnimationFrame(loop);
+    },
+
+    screenToWorld(sx, sy) { return { x: (sx - this.camera.x) / this.camera.zoom, y: (sy - this.camera.y) / this.camera.zoom }; },
+    worldToScreen(wx, wy) { return { x: (wx * this.camera.zoom) + this.camera.x, y: (wy * this.camera.zoom) + this.camera.y }; },
+    snap(val) { if (!this.snapToGrid) return val; return Math.round(val); },
+    clearOverlay() { this.overlayImage = null; this.render(); },
+
+    render() {
+        ctx.fillStyle = this.backgroundColor; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        if (this.showRefScale) {
+            ctx.save();
+            const topLeft = this.worldToScreen(-8, -8);
+            const dim = 16 * this.camera.zoom;
+            
+            ctx.strokeStyle = "#00ff00"; // Bright green
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 4]); // Dashed line
+            ctx.strokeRect(topLeft.x, topLeft.y, dim, dim);
+            
+            // Optional: Draw a small X at origin to be clear
+            const origin = this.worldToScreen(0, 0);
+            ctx.fillStyle = "#00ff00";
+            ctx.fillRect(origin.x - 2, origin.y - 2, 4, 4);
+            ctx.restore();
+        }
+
+
+        
+        if (this.onionSkin && this.currentFrameIndex > 0) {
+            const prevFrame = project.getCurrentAction().frames[this.currentFrameIndex - 1];
+            this.drawFrame(prevFrame, 0.3);
+        }
+
+        const frame = project.getCurrentFrame();
+        this.drawFrame(frame, 1.0);
+
+        if (this.drawingShape) {
+            const pts = this.drawingShape.points;
+            if (pts.length > 0) {
+                ctx.beginPath();
+                const start = this.worldToScreen(pts[0].x, pts[0].y);
+                ctx.moveTo(start.x, start.y);
+                ctx.fillStyle = "#fff"; ctx.fillRect(start.x - 3, start.y - 3, 6, 6);
+                for (let i = 1; i < pts.length; i++) {
+                    const p = this.worldToScreen(pts[i].x, pts[i].y);
+                    ctx.lineTo(p.x, p.y); ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
+                }
+                if (!this.drawingShape.open) ctx.closePath();
+                ctx.strokeStyle = "#00aaff"; ctx.lineWidth = 2; ctx.stroke();
+                const lastPt = pts[pts.length - 1];
+                const lastScreen = this.worldToScreen(lastPt.x, lastPt.y);
+                const mouseScreen = this.worldToScreen(this.mouseWorld.x, this.mouseWorld.y);
+                ctx.beginPath(); ctx.moveTo(lastScreen.x, lastScreen.y); ctx.lineTo(mouseScreen.x, mouseScreen.y);
+                ctx.strokeStyle = "#00aaff"; ctx.lineWidth = 1; ctx.setLineDash([5, 5]); ctx.stroke(); ctx.setLineDash([]);
+            }
+        }
+
+        if (this.overlayImage) {
+            ctx.save(); 
+            ctx.globalAlpha = this.overlayOpacity;
+            
+            // Calculate screen position based on world coordinates (overlayX, overlayY)
+            const screenPos = this.worldToScreen(this.overlayX, this.overlayY); 
+            
+            // Calculate dimensions based on scale
+            const w = this.overlayImage.width * (this.camera.zoom / this.gridSize) * this.overlayScale; 
+            const h = this.overlayImage.height * (this.camera.zoom / this.gridSize) * this.overlayScale;
+            
+            ctx.drawImage(this.overlayImage, screenPos.x - w/2, screenPos.y - h/2, w, h);
+            ctx.restore();
+        }
+
+
+        if (this.tool === 'select') {
+            this.selectedShapes.forEach(shape => {
+                this.drawSelectionUI(shape, this.selectedShapes.length === 1);
+            });
+        }
+        
+        if (this.tool === 'draw' || this.isDragging) {
+             const s = this.worldToScreen(this.mouseWorld.x, this.mouseWorld.y);
+             ctx.strokeStyle = "#fff"; ctx.lineWidth = 1;
+             ctx.beginPath(); ctx.arc(s.x, s.y, 3, 0, Math.PI*2); ctx.stroke();
+             ctx.fillStyle = "#fff"; ctx.font = "10px monospace";
+             ctx.fillText(`${Math.round(this.mouseWorld.x)}, ${Math.round(this.mouseWorld.y)}`, s.x + 10, s.y);
+        }
+        this.drawGrid();
+    },
+
+
+    drawGrid() {
+        if (!this.showGrid) return;
+        const zoom = this.camera.zoom;
+        const stride = Math.max(1, Math.ceil(12 / zoom));
+        const spacing = zoom * stride;
+        const offsetX = this.camera.x % spacing;
+        const offsetY = this.camera.y % spacing;
+        ctx.beginPath(); ctx.fillStyle = "#444";
+        for (let x = offsetX; x < canvas.width; x += spacing) {
+            for (let y = offsetY; y < canvas.height; y += spacing) {
+                ctx.moveTo(x + 1.5, y);
+                ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+            }
+        }
+        ctx.fill();
+        const origin = this.worldToScreen(0, 0);
+        ctx.beginPath(); ctx.strokeStyle = "#444"; ctx.lineWidth = 2;
+        ctx.moveTo(origin.x - 10, origin.y); ctx.lineTo(origin.x + 10, origin.y);
+        ctx.moveTo(origin.x, origin.y - 10); ctx.lineTo(origin.x, origin.y + 10);
+        ctx.stroke();
+    },
+
+    drawFrame(frame, alphaMult) {
+        frame.shapes.forEach(shape => { this.drawPoly(shape, alphaMult, false); });
+    },
+
+    drawPoly(shape, alphaMult, isOutline) {
+        if (shape.points.length === 0) return;
+        ctx.beginPath();
+        const start = this.worldToScreen(shape.points[0].x, shape.points[0].y);
+        ctx.moveTo(start.x, start.y);
+        for (let i = 1; i < shape.points.length; i++) {
+            const p = this.worldToScreen(shape.points[i].x, shape.points[i].y);
+            ctx.lineTo(p.x, p.y);
+        }
+        const isOpen = !!shape.open;
+        if (!isOpen) ctx.closePath();
+        const c = shape.color;
+        ctx.fillStyle = `rgba(${c.r},${c.g},${c.b},${(c.a/255) * alphaMult})`;
+        if (!isOpen && !isOutline) ctx.fill();
+        const borderWidth = Math.max(0, Number(shape.borderWidth) || 0);
+        if (borderWidth > 0) {
+            const border = shape.borderColor || c;
+            ctx.strokeStyle = `rgba(${border.r},${border.g},${border.b},${alphaMult})`;
+            ctx.lineWidth = borderWidth * this.camera.zoom;
+            ctx.lineJoin = "round";
+            ctx.stroke();
+        }
+    },
+
+    drawSelectionUI(shape, showPoints) {
+        ctx.beginPath();
+        if (shape.points.length > 0) {
+            const start = this.worldToScreen(shape.points[0].x, shape.points[0].y);
+            ctx.moveTo(start.x, start.y);
+            for (let i = 1; i < shape.points.length; i++) {
+                const p = this.worldToScreen(shape.points[i].x, shape.points[i].y);
+                ctx.lineTo(p.x, p.y);
+            }
+            if (!shape.open) ctx.closePath();
+            ctx.strokeStyle = "#00aaff"; ctx.lineWidth = 1.5; ctx.setLineDash([5, 3]); ctx.stroke(); ctx.setLineDash([]);
+        }
+        if (showPoints) {
+            shape.points.forEach((pt, idx) => {
+                const s = this.worldToScreen(pt.x, pt.y);
+                ctx.beginPath(); ctx.arc(s.x, s.y, 4, 0, Math.PI*2);
+                ctx.fillStyle = (idx === this.selectedPointIndex) ? "#ff0000" : "#fff";
+                ctx.strokeStyle = "#000"; ctx.fill(); ctx.stroke();
+            });
+        }
+    }
+};
+
+// --- INPUT HANDLING ---
+
+function getMousePos(evt) {
+    const rect = canvas.getBoundingClientRect();
+    return { x: evt.clientX - rect.left, y: evt.clientY - rect.top };
+}
+
+canvas.addEventListener('mousedown', (e) => {
+    const pos = getMousePos(e);
+    if (e.button === 1 || (e.button === 0 && e.altKey)) {
+        editor.isPanning = true; editor.dragStart = pos; return;
+    }
+
+    const worldPos = editor.screenToWorld(pos.x, pos.y);
+    const snapPos = { x: editor.snap(worldPos.x), y: editor.snap(worldPos.y) };
+
+    if (editor.tool === 'select') {
+        // UPDATED: Multi-select Logic
+        
+        // 1. Check Points (Only if 1 shape selected)
+        if (editor.selectedShapes.length === 1) {
+            const shape = editor.selectedShapes[0];
+            for (let i = 0; i < shape.points.length; i++) {
+                const pt = shape.points[i];
+                const sPt = editor.worldToScreen(pt.x, pt.y);
+                if (Math.hypot(sPt.x - pos.x, sPt.y - pos.y) < 8) {
+                    editor.selectedPointIndex = i;
+                    editor.isDragging = true;
+                    editor.render();
+                    return;
+                }
+            }
+        }
+        
+        // 2. Check Shape Hit
+        const frame = project.getCurrentFrame();
+        let clickedShape = null;
+        for (let i = frame.shapes.length - 1; i >= 0; i--) {
+            if (shapeHitTest(worldPos, frame.shapes[i], editor.camera.zoom)) {
+                clickedShape = frame.shapes[i];
+                break;
+            }
+        }
+
+        if (clickedShape) {
+            if (e.shiftKey) {
+                // Toggle selection
+                const idx = editor.selectedShapes.indexOf(clickedShape);
+                if (idx > -1) editor.selectedShapes.splice(idx, 1);
+                else editor.selectedShapes.push(clickedShape);
+                editor.selectedPointIndex = -1; 
+            } else {
+                // Standard select, but allow group drag if already selected
+                if (!editor.selectedShapes.includes(clickedShape)) {
+                    editor.selectedShapes = [clickedShape];
+                }
+                editor.selectedPointIndex = -1;
+                
+                if (editor.selectedShapes.length === 1) {
+                    const c = editor.selectedShapes[0].color;
+                    editor.syncColorInputs(c);
+                    document.getElementById('alpha-slider').value = c.a;
+                }
+            }
+            editor.isDragging = true;
+            editor.dragStart = snapPos;
+        } else {
+            // Clicked Empty
+            if (!e.shiftKey) editor.selectedShapes = [];
+        }
+        project.refreshUI();
+        editor.render();
+    }
+    else if (editor.tool === 'draw') {
+        if (e.button === 0) { 
+            if (!editor.drawingShape) {
+                editor.drawingShape = editor.createShapeFromProperties();
+                editor.drawingShape.points.push(snapPos);
+            } else {
+                const startPt = editor.drawingShape.points[0];
+                if (editor.drawingShape.points.length >= 2 && snapPos.x === startPt.x && snapPos.y === startPt.y) {
+                    project.getCurrentFrame().shapes.push(editor.drawingShape);
+                    editor.selectedShapes = [editor.drawingShape];
+                    editor.drawingShape = null; 
+                    project.isDirty = true;
+                    project.refreshUI();
+                } else {
+                    editor.drawingShape.points.push(snapPos);
+                }
+            }
+            editor.render();
+        } 
+    }
+    else if (editor.tool === 'circle' && e.button === 0) {
+        editor.circleStart = snapPos;
+        editor.drawingShape = editor.createShapeFromProperties();
+        editor.updateCircleShape(snapPos);
+        editor.render();
+    }
+});
+
+
+canvas.addEventListener('mousemove', (e) => {
+    const pos = getMousePos(e);
+    const worldPos = editor.screenToWorld(pos.x, pos.y);
+    editor.mouseWorld = { x: editor.snap(worldPos.x), y: editor.snap(worldPos.y) };
+
+    if (editor.tool === 'circle' && editor.circleStart) {
+        editor.updateCircleShape(editor.mouseWorld);
+        editor.render();
+        return;
+    }
+
+    if (editor.isPanning) {
+        const dx = pos.x - editor.dragStart.x;
+        const dy = pos.y - editor.dragStart.y;
+        editor.camera.x += dx; editor.camera.y += dy;
+        editor.dragStart = pos; editor.render(); return;
+    }
+
+    if (editor.isDragging && editor.selectedShapes.length > 0) {
+        // Point Drag (single mode)
+        if (editor.selectedPointIndex !== -1 && editor.selectedShapes.length === 1) {
+            editor.selectedShapes[0].points[editor.selectedPointIndex] = editor.mouseWorld;
+        } 
+        // Group Drag
+        else {
+            const deltaX = editor.mouseWorld.x - editor.dragStart.x;
+            const deltaY = editor.mouseWorld.y - editor.dragStart.y;
+            if (deltaX !== 0 || deltaY !== 0) {
+                editor.selectedShapes.forEach(shape => {
+                    shape.points.forEach(p => { p.x += deltaX; p.y += deltaY; });
+                });
+                editor.dragStart = editor.mouseWorld;
+            }
+        }
+        editor.render();
+    } else {
+        editor.render();
+    }
+});
+
+canvas.addEventListener('mouseup', (e) => {
+    if (editor.tool === 'circle' && editor.circleStart && e.button === 0) {
+        const pos = getMousePos(e);
+        const worldPos = editor.screenToWorld(pos.x, pos.y);
+        const endPoint = { x: editor.snap(worldPos.x), y: editor.snap(worldPos.y) };
+        editor.updateCircleShape(endPoint);
+        if (Math.hypot(endPoint.x - editor.circleStart.x, endPoint.y - editor.circleStart.y) > 0) {
+            project.getCurrentFrame().shapes.push(editor.drawingShape);
+            editor.selectedShapes = [editor.drawingShape];
+            project.isDirty = true;
+            project.refreshUI();
+        }
+        editor.drawingShape = null;
+        editor.circleStart = null;
+        editor.render();
+    }
+    if (editor.isDragging) project.isDirty = true;
+    editor.isDragging = false;
+    editor.isPanning = false;
+});
+
+canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const direction = e.deltaY > 0 ? -1 : 1;
+    let newZoom = editor.camera.zoom + (direction * 2);
+    if (newZoom < 1) newZoom = 1; if (newZoom > 100) newZoom = 100;
+    editor.camera.zoom = newZoom;
+    editor.render();
+});
+
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        if (editor.tool === 'draw' && editor.drawingShape && editor.drawingShape.points.length > 0) {
+            const shape = editor.drawingShape;
+            project.getCurrentFrame().shapes.push(shape);
+            editor.selectedShapes = [shape];
+            editor.drawingShape = null;
+            project.isDirty = true;
+            project.refreshUI();
+        } else {
+            if (editor.drawingShape) editor.drawingShape = null;
+        }
+        editor.circleStart = null;
+        editor.setTool('select');
+        return;
+    }
+
+    if (e.target.tagName === 'INPUT') return;
+
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        if (editor.tool === 'draw' && editor.drawingShape) {
+            e.preventDefault(); editor.drawingShape.points.pop();
+            if (editor.drawingShape.points.length === 0) editor.drawingShape = null;
+            editor.render(); return;
+        }
+    }
+
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (editor.tool === 'draw' && editor.drawingShape) {
+            e.preventDefault();
+            editor.drawingShape.points.pop();
+            if (editor.drawingShape.points.length === 0) editor.drawingShape = null;
+            editor.render();
+            return;
+        }
+
+        if (editor.tool === 'select') {
+            if (editor.selectedPointIndex !== -1 && editor.selectedShapes.length === 1 && editor.selectedShapes[0].points.length > 3) {
+                editor.selectedShapes[0].points.splice(editor.selectedPointIndex, 1);
+                editor.selectedPointIndex = -1;
+                project.isDirty = true; editor.render();
+            } else {
+                editor.deleteSelectedShape();
+            }
+        }
+    }
+
+    // NEW: Copy / Paste Logic
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+        if (editor.selectedShapes.length > 0) {
+            editor.clipboard = JSON.parse(JSON.stringify(editor.selectedShapes));
+        }
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
+        if (editor.clipboard.length > 0) {
+            const frame = project.getCurrentFrame();
+            const newShapes = JSON.parse(JSON.stringify(editor.clipboard));
+            // Offset pasted shapes so they are visible
+            newShapes.forEach(s => s.points.forEach(p => { p.x += 8; p.y += 8; }));
+            
+            frame.shapes.push(...newShapes);
+            editor.selectedShapes = newShapes; // Select pasted
+            editor.selectedPointIndex = -1;
+            project.isDirty = true;
+            project.refreshUI();
+            editor.render();
+        }
+    }
+    
+    if (e.key === ' ') { editor.togglePlay(); e.preventDefault(); }
+    if (e.key === 's' || e.key === '1') editor.setTool('select');
+    if (e.key === 'd' || e.key === '2') editor.setTool('draw');
+
+    if (e.key === 'ArrowLeft') {
+        if(editor.currentFrameIndex > 0) { editor.currentFrameIndex--; editor.selectedShapes = []; editor.render(); project.refreshUI(); }
+    }
+    if (e.key === 'ArrowRight') {
+        const act = project.getCurrentAction();
+        if(editor.currentFrameIndex < act.frames.length - 1) { editor.currentFrameIndex++; editor.selectedShapes = []; editor.render(); project.refreshUI(); }
+    }
+});
+
+// Helpers
+canvas.addEventListener('dragover', (e) => e.preventDefault());
+canvas.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file && (file.type === "image/png" || file.type === "image/jpeg")) {
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            const img = new Image();
+            img.onload = () => { editor.overlayImage = img; editor.render(); };
+            img.src = evt.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+function hexToRgb(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : { r: 0, g: 0, b: 0 };
+}
+function normalizeHexColor(hex) {
+    const value = hex.trim().replace(/^#/, '');
+    return /^[a-f\d]{6}$/i.test(value) ? value.toUpperCase() : null;
+}
+function rgbToHex(r, g, b) { return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1); }
+function pointInPoly(pt, vs) {
+    let x = pt.x, y = pt.y, inside = false;
+    for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+        let xi = vs[i].x, yi = vs[i].y, xj = vs[j].x, yj = vs[j].y;
+        let intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+    }
+    return inside;
+}
+function shapeHitTest(pt, shape, zoom) {
+    if (!shape.open) return pointInPoly(pt, shape.points);
+    const pts = shape.points;
+    const threshold = Math.max(4 / zoom, (Number(shape.borderWidth) || 0) / 2);
+    for (let i = 1; i < pts.length; i++) {
+        const a = pts[i - 1], b = pts[i];
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const lengthSquared = dx * dx + dy * dy;
+        const t = lengthSquared === 0 ? 0 : Math.max(0, Math.min(1, ((pt.x - a.x) * dx + (pt.y - a.y) * dy) / lengthSquared));
+        if (Math.hypot(pt.x - (a.x + t * dx), pt.y - (a.y + t * dy)) <= threshold) return true;
+    }
+    return false;
+}
+
+window.onbeforeunload = (e) => { if (project.isDirty) { e.returnValue = "Unsaved changes"; return e.returnValue; } };
+
+project.init();
+editor.init();
+</script>
