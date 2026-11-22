@@ -10,6 +10,9 @@ import { refreshPlayback } from '../ui/panels.js';
 export const editor = {
     canvas: null,
     ctx: null,
+    dpr: 1,
+    viewWidth: 0,
+    viewHeight: 0,
 
     camera: { x: 0, y: 0, zoom: 20 },
     tool: 'select',
@@ -58,10 +61,17 @@ export const editor = {
 
     resize() {
         const container = this.canvas.parentElement;
-        this.canvas.width = container.clientWidth;
-        this.canvas.height = container.clientHeight;
-        this.camera.x = this.canvas.width / 2;
-        this.camera.y = this.canvas.height / 2;
+        // Back the canvas with physical pixels so it's sharp on high-DPI screens. All drawing
+        // still uses CSS-pixel coordinates (render() applies the dpr scale).
+        this.dpr = window.devicePixelRatio || 1;
+        this.viewWidth = container.clientWidth;
+        this.viewHeight = container.clientHeight;
+        this.canvas.width = Math.round(this.viewWidth * this.dpr);
+        this.canvas.height = Math.round(this.viewHeight * this.dpr);
+        this.canvas.style.width = `${this.viewWidth}px`;
+        this.canvas.style.height = `${this.viewHeight}px`;
+        this.camera.x = this.viewWidth / 2;
+        this.camera.y = this.viewHeight / 2;
         this.render();
     },
 

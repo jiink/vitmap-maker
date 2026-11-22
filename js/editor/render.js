@@ -3,10 +3,11 @@ import { project } from '../project.js';
 
 export const renderMethods = {
     render() {
-        const { ctx, canvas } = this;
+        const { ctx } = this;
         if (!ctx) return;
+        ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
         ctx.fillStyle = this.backgroundColor;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillRect(0, 0, this.viewWidth, this.viewHeight);
 
         if (this.showRefScale) this.drawRefScale();
 
@@ -111,20 +112,23 @@ export const renderMethods = {
 
     drawGrid() {
         if (!this.showGrid) return;
-        const { ctx, canvas } = this;
+        const { ctx, canvas, dpr } = this;
         const zoom = this.camera.zoom;
         const stride = Math.max(1, Math.ceil(12 / zoom));
-        const spacing = zoom * stride;
-        const offsetX = this.camera.x % spacing;
-        const offsetY = this.camera.y % spacing;
-        ctx.beginPath(); ctx.fillStyle = "#444";
+        const spacing = zoom * stride * dpr;
+        const offsetX = (this.camera.x * dpr) % spacing;
+        const offsetY = (this.camera.y * dpr) % spacing;
+        // Dots are exactly one physical pixel, so draw them untransformed in device pixels.
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.beginPath(); ctx.fillStyle = "#808080";
         for (let x = offsetX; x < canvas.width; x += spacing) {
             for (let y = offsetY; y < canvas.height; y += spacing) {
-                ctx.moveTo(x + 1.5, y);
-                ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+                ctx.rect(Math.round(x), Math.round(y), 1, 1);
             }
         }
         ctx.fill();
+        ctx.restore();
         const origin = this.worldToScreen(0, 0);
         ctx.beginPath(); ctx.strokeStyle = "#444"; ctx.lineWidth = 2;
         ctx.moveTo(origin.x - 10, origin.y); ctx.lineTo(origin.x + 10, origin.y);
