@@ -3,10 +3,11 @@ import { project } from '../project.js';
 
 export const renderMethods = {
     render() {
-        const { ctx, canvas } = this;
+        const { ctx } = this;
         if (!ctx) return;
+        ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
         ctx.fillStyle = this.backgroundColor;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillRect(0, 0, this.viewWidth, this.viewHeight);
 
         if (this.showRefScale) this.drawRefScale();
 
@@ -16,9 +17,12 @@ export const renderMethods = {
         }
 
         this.drawFrame(project.getCurrentFrame(), 1.0);
-
         if (this.drawingShape) this.drawInProgressShape();
+
+        // Reference image goes above every shape; only the editing aids (grid,
+        // selection handles, cursor) are drawn over it so they stay usable.
         if (this.overlayImage) this.drawOverlay();
+        this.drawGrid();
 
         if (this.tool === 'select') {
             this.selectedShapes.forEach(shape => {
@@ -27,7 +31,27 @@ export const renderMethods = {
         }
 
         if (this.tool === 'draw' || this.isDragging) this.drawCursor();
-        this.drawGrid();
+        this.renderPreview();
+    },
+
+    /** The small read-only viewport: current frame at a fixed zoom, centered on the origin. */
+    renderPreview() {
+        const canvas = this.previewCanvas;
+        if (!canvas || !this.showPreview) return;
+        const previewCtx = canvas.getContext('2d');
+        previewCtx.fillStyle = this.backgroundColor;
+        previewCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Reuse the normal drawing code by pointing it at the preview's context and camera.
+        const saved = { ctx: this.ctx, camera: this.camera };
+        this.ctx = previewCtx;
+        this.camera = { x: canvas.width / 2, y: canvas.height / 2, zoom: this.previewZoom };
+        try {
+            this.drawFrame(project.getCurrentFrame(), 1.0);
+            if (this.drawingShape) this.drawPoly(this.drawingShape, 1.0, false);
+        } finally {
+            Object.assign(this, saved);
+        }
     },
 
     drawRefScale() {
@@ -88,20 +112,29 @@ export const renderMethods = {
 
     drawGrid() {
         if (!this.showGrid) return;
-        const { ctx, canvas } = this;
+        const { ctx, canvas, dpr } = this;
         const zoom = this.camera.zoom;
         const stride = Math.max(1, Math.ceil(12 / zoom));
-        const spacing = zoom * stride;
-        const offsetX = this.camera.x % spacing;
-        const offsetY = this.camera.y % spacing;
-        ctx.beginPath(); ctx.fillStyle = "#444";
-        for (let x = offsetX; x < canvas.width; x += spacing) {
-            for (let y = offsetY; y < canvas.height; y += spacing) {
-                ctx.moveTo(x + 1.5, y);
-                ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+        const spacing = zoom * stride * dpr;
+        const offsetX = (this.camera.x * dpr) % spacing;
+        const offsetY = (this.camera.y * dpr) % spacing;
+        // Dots are exactly one physical pixel, so draw them untransformed in device pixels.
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        // Each dot is a white pixel with a black pixel directly below it, so it stays
+        // visible on both light and dark backgrounds/shapes.
+        const dots = (color, dy) => {
+            ctx.beginPath(); ctx.fillStyle = color;
+            for (let x = offsetX; x < canvas.width; x += spacing) {
+                for (let y = offsetY; y < canvas.height; y += spacing) {
+                    ctx.rect(Math.round(x), Math.round(y) + dy, 1, 1);
+                }
             }
-        }
-        ctx.fill();
+            ctx.fill();
+        };
+        dots("#000000", 1);
+        dots("#ffffff", 0);
+        ctx.restore();
         const origin = this.worldToScreen(0, 0);
         ctx.beginPath(); ctx.strokeStyle = "#444"; ctx.lineWidth = 2;
         ctx.moveTo(origin.x - 10, origin.y); ctx.lineTo(origin.x + 10, origin.y);
@@ -110,7 +143,7 @@ export const renderMethods = {
     },
 
     drawFrame(frame, alphaMult) {
-        frame.shapes.forEach(shape => { this.drawPoly(shape, alphaMult, false); });
+        frame.shapes.forEach(shape => { if (!shape.hidden) this.drawPoly(shape, alphaMult, false); });
     },
 
     drawPoly(shape, alphaMult, isOutline) {

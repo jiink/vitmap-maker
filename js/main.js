@@ -9,7 +9,7 @@ const canvas = document.getElementById('main-canvas');
 bindControls();
 bindCanvasInput(canvas);
 project.init();
-editor.init(canvas);
+editor.init(canvas, document.getElementById('preview-canvas'));
 
 window.addEventListener('beforeunload', (e) => {
     if (project.isDirty) {

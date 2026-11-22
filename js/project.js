@@ -2,6 +2,7 @@
 import { Action, Frame } from './models.js';
 import { editor } from './editor/editor.js';
 import { refreshUI } from './ui/panels.js';
+import { history } from './history.js';
 
 export const project = {
     actions: [],
@@ -14,10 +15,17 @@ export const project = {
         this.currentActionIndex = 0;
         document.getElementById('project-name').value = this.name;
         this.isDirty = false;
+        history.reset();
         this.refreshUI();
     },
 
     refreshUI() { refreshUI(); },
+
+    /** Call after a finished edit: flags unsaved changes and records an undo step. */
+    markDirty() {
+        this.isDirty = true;
+        history.commit();
+    },
 
     getCurrentAction() { return this.actions[this.currentActionIndex]; },
     getCurrentFrame() { return this.getCurrentAction().frames[editor.currentFrameIndex]; },
@@ -40,6 +48,7 @@ export const project = {
         editor.selectedShapes = [];
         editor.selectedPointIndex = -1;
         this.isDirty = false;
+        history.reset();
         this.refreshUI();
         editor.render();
     },
@@ -52,7 +61,7 @@ export const project = {
         editor.currentFrameIndex = 0;
         editor.selectedShapes = [];
         nameInput.value = "";
-        this.isDirty = true;
+        this.markDirty();
         this.refreshUI();
         editor.render();
     },
@@ -70,7 +79,7 @@ export const project = {
         }
         editor.currentFrameIndex = 0;
         editor.selectedShapes = [];
-        this.isDirty = true;
+        this.markDirty();
         this.refreshUI();
         editor.render();
     },
@@ -87,7 +96,7 @@ export const project = {
         const newName = prompt("Enter new name for this action:", this.actions[index].name);
         if (newName && newName.trim() !== "") {
             this.actions[index].name = newName.trim();
-            this.isDirty = true;
+            this.markDirty();
             this.refreshUI();
         }
     },
@@ -103,7 +112,7 @@ export const project = {
         this.getCurrentAction().frames.push(new Frame());
         editor.currentFrameIndex = this.getCurrentAction().frames.length - 1;
         editor.selectedShapes = [];
-        this.isDirty = true;
+        this.markDirty();
         this.refreshUI();
         editor.render();
     },
@@ -117,7 +126,7 @@ export const project = {
         action.frames.splice(editor.currentFrameIndex + 1, 0, newFrame);
         editor.currentFrameIndex++;
         editor.selectedShapes = [];
-        this.isDirty = true;
+        this.markDirty();
         this.refreshUI();
         editor.render();
     },
@@ -130,7 +139,7 @@ export const project = {
             editor.currentFrameIndex = action.frames.length - 1;
         }
         editor.selectedShapes = [];
-        this.isDirty = true;
+        this.markDirty();
         this.refreshUI();
         editor.render();
     },

@@ -2,6 +2,7 @@
 import { project } from './project.js';
 import { editor } from './editor/editor.js';
 import { shapeHitTest } from './utils/geometry.js';
+import { history } from './history.js';
 
 function getMousePos(canvas, evt) {
     const rect = canvas.getBoundingClientRect();
@@ -16,7 +17,7 @@ function commitDrawingShape() {
     project.getCurrentFrame().shapes.push(editor.drawingShape);
     editor.selectedShapes = [editor.drawingShape];
     editor.drawingShape = null;
-    project.isDirty = true;
+    project.markDirty();
     project.refreshUI();
 }
 
@@ -40,7 +41,7 @@ function onMouseDownSelect(e, pos, worldPos, snapPos) {
     const frame = project.getCurrentFrame();
     let clickedShape = null;
     for (let i = frame.shapes.length - 1; i >= 0; i--) {
-        if (shapeHitTest(worldPos, frame.shapes[i], editor.camera.zoom)) {
+        if (!frame.shapes[i].hidden && shapeHitTest(worldPos, frame.shapes[i], editor.camera.zoom)) {
             clickedShape = frame.shapes[i];
             break;
         }
@@ -159,7 +160,7 @@ function bindMouse(canvas) {
             editor.circleStart = null;
             editor.render();
         }
-        if (editor.isDragging) project.isDirty = true;
+        if (editor.isDragging) project.markDirty();
         editor.isDragging = false;
         editor.isPanning = false;
     });
@@ -181,6 +182,11 @@ function popDrawingPoint(e) {
     editor.render();
 }
 
+function isTextField(target) {
+    if (target.tagName === 'TEXTAREA' || target.isContentEditable) return true;
+    return target.tagName === 'INPUT' && ['text', 'number', 'search', ''].includes(target.type);
+}
+
 function bindKeyboard() {
     window.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
@@ -194,14 +200,24 @@ function bindKeyboard() {
             return;
         }
 
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
         const ctrl = e.ctrlKey || e.metaKey;
         const key = e.key.toLowerCase();
 
-        if (ctrl && key === 'z' && editor.tool === 'draw' && editor.drawingShape) {
-            popDrawingPoint(e);
+        // Undo/redo work everywhere except text fields, which keep their own undo.
+        if (ctrl && (key === 'z' || key === 'y') && !isTextField(e.target)) {
+            e.preventDefault();
+            const redo = key === 'y' || e.shiftKey;
+            if (!redo && editor.tool === 'draw' && editor.drawingShape) {
+                popDrawingPoint(e);
+            } else if (redo) {
+                history.redo();
+            } else {
+                history.undo();
+            }
             return;
         }
+
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
         if (e.key === 'Delete' || e.key === 'Backspace') {
             if (editor.tool === 'draw' && editor.drawingShape) {
@@ -212,7 +228,7 @@ function bindKeyboard() {
                 if (editor.selectedPointIndex !== -1 && editor.selectedShapes.length === 1 && editor.selectedShapes[0].points.length > 3) {
                     editor.selectedShapes[0].points.splice(editor.selectedPointIndex, 1);
                     editor.selectedPointIndex = -1;
-                    project.isDirty = true;
+                    project.markDirty();
                     editor.render();
                 } else {
                     editor.deleteSelectedShape();
@@ -230,7 +246,7 @@ function bindKeyboard() {
             project.getCurrentFrame().shapes.push(...newShapes);
             editor.selectedShapes = newShapes;
             editor.selectedPointIndex = -1;
-            project.isDirty = true;
+            project.markDirty();
             project.refreshUI();
             editor.render();
         }

@@ -275,3 +275,78 @@ input[type="color"] {
 }
 #toast.visible { opacity: 1; }
 #toast.warn { border-color: #d7ba7d; }
+
+/* Toggle switches (all checkboxes) */
+input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    flex: 0 0 auto;
+    width: 36px;
+    height: 20px;
+    margin: 0;
+    border-radius: 10px;
+    background: #555;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+input[type="checkbox"]::before {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #ccc;
+    transition: transform 0.15s, background 0.15s;
+}
+input[type="checkbox"]:checked { background: var(--accent); }
+input[type="checkbox"]:checked::before { transform: translateX(16px); background: #fff; }
+input[type="checkbox"]:focus-visible { outline: 2px solid var(--accent-hover); outline-offset: 2px; }
+.row input[type="checkbox"] + label { flex: 1; cursor: pointer; padding: 3px 0; }
+.toggle-label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+
+/* Overlay scale */
+.small-number { flex: 0 0 56px; width: 56px !important; }
+#overlay-scale { flex: 1; min-width: 0; }
+
+/* Shape visibility */
+.layer-eye {
+    background: none;
+    border: none;
+    color: #aaa;
+    padding: 2px 6px;
+}
+.layer-eye:hover { background: #555; color: #fff; }
+.layer-item.hidden-shape .layer-name,
+.layer-item.hidden-shape .layer-color { opacity: 0.4; }
+.layer-item.hidden-shape .layer-eye { color: #666; }
+
+/* Preview viewport (view only) */
+#preview {
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    z-index: 5;
+}
+#preview-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 4px 3px 8px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    background: var(--bg-header);
+}
+#preview-header button { padding: 1px 5px; font-size: 10px; }
+#preview-zoom { min-width: 24px; text-align: center; text-transform: none; }
+#preview-canvas { display: block; image-rendering: pixelated; }
+#preview.collapsed #preview-canvas,
+#preview.collapsed #preview-header button:not([data-action="toggle-preview"]),
+#preview.collapsed #preview-zoom { display: none; }
+#preview.collapsed [data-action="toggle-preview"] i { transform: rotate(180deg); }

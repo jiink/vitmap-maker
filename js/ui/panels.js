@@ -39,7 +39,7 @@ function renderTimeline() {
     frameCont.replaceChildren();
     project.getCurrentAction().frames.forEach((frm, idx) => {
         const div = el('div', `frame ${idx === editor.currentFrameIndex ? 'active' : ''}`, String(idx + 1));
-        div.onclick = () => project.selectFrame(idx);
+        div.onmousedown = () => project.selectFrame(idx);
         frameCont.appendChild(div);
     });
 }
@@ -52,14 +52,31 @@ function renderLayerList() {
     [...currentFrame.shapes].reverse().forEach((shape, revIdx) => {
         const realIdx = currentFrame.shapes.length - 1 - revIdx;
         const isSelected = editor.selectedShapes.includes(shape);
-        const row = el('div', `layer-item ${isSelected ? 'selected' : ''}`);
+        const row = el('div', `layer-item ${isSelected ? 'selected' : ''} ${shape.hidden ? 'hidden-shape' : ''}`);
 
         const c = shape.color;
         const swatch = el('div', 'layer-color');
         swatch.style.background = `rgba(${c.r},${c.g},${c.b},${c.a / 255})`;
-        row.append(swatch, el('div', 'layer-name', `Shape ${realIdx} (${shape.points.length} pts)`), el('i', 'fas fa-eye'));
+        const eye = el('button', 'layer-eye');
+        eye.title = shape.hidden ? 'Show shape' : 'Hide shape';
+        eye.setAttribute('aria-label', eye.title);
+        eye.appendChild(el('i', shape.hidden ? 'fas fa-eye-slash' : 'fas fa-eye'));
+        // mousedown, not click: see note on row.onmousedown below.
+        eye.onmousedown = (e) => {
+            if (e.button !== 0) return;
+            e.stopPropagation();
+            if (shape.hidden) delete shape.hidden;
+            else shape.hidden = true;
+            project.markDirty();
+            editor.render();
+            refreshUI();
+        };
+        row.append(swatch, el('div', 'layer-name', `Shape ${realIdx} (${shape.points.length} pts)`), eye);
 
-        row.onclick = (e) => {
+        // Act on mousedown rather than click: during playback the list is rebuilt every frame,
+        // so press and release can land on different elements and a click event never fires.
+        row.onmousedown = (e) => {
+            if (e.button !== 0) return;
             editor.tool = 'select';
             if (e.shiftKey) {
                 const idx = editor.selectedShapes.indexOf(shape);
@@ -81,6 +98,14 @@ function renderLayerList() {
         };
         layerList.appendChild(row);
     });
+}
+
+/** Cheap update for animation playback: move the timeline highlight, refresh the shape list. */
+export function refreshPlayback() {
+    document.querySelectorAll('#frames-container .frame').forEach((div, idx) => {
+        div.classList.toggle('active', idx === editor.currentFrameIndex);
+    });
+    renderLayerList();
 }
 
 export function refreshUI() {

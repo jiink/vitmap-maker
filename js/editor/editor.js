@@ -5,10 +5,14 @@ import { project } from '../project.js';
 import { hexToRgb, normalizeHexColor, rgbToHex } from '../utils/color.js';
 import { renderMethods } from './render.js';
 import { transformMethods } from './transform.js';
+import { refreshPlayback } from '../ui/panels.js';
 
 export const editor = {
     canvas: null,
     ctx: null,
+    dpr: 1,
+    viewWidth: 0,
+    viewHeight: 0,
 
     camera: { x: 0, y: 0, zoom: 20 },
     tool: 'select',
@@ -22,6 +26,9 @@ export const editor = {
     overlayX: 0,
     overlayY: 0,
     backgroundColor: '#121212',
+    previewCanvas: null,
+    showPreview: true,
+    previewZoom: 2,
 
     currentFrameIndex: 0,
     fps: 12,
@@ -42,9 +49,11 @@ export const editor = {
     borderColor: { r: 255, g: 255, b: 255 },
     open: false,
 
-    init(canvas) {
+    init(canvas, previewCanvas) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
+        this.previewCanvas = previewCanvas;
+        this.setPreviewZoom(this.previewZoom);
         this.resize();
         window.addEventListener('resize', () => this.resize());
         this.startLoop();
@@ -52,10 +61,17 @@ export const editor = {
 
     resize() {
         const container = this.canvas.parentElement;
-        this.canvas.width = container.clientWidth;
-        this.canvas.height = container.clientHeight;
-        this.camera.x = this.canvas.width / 2;
-        this.camera.y = this.canvas.height / 2;
+        // Back the canvas with physical pixels so it's sharp on high-DPI screens. All drawing
+        // still uses CSS-pixel coordinates (render() applies the dpr scale).
+        this.dpr = window.devicePixelRatio || 1;
+        this.viewWidth = container.clientWidth;
+        this.viewHeight = container.clientHeight;
+        this.canvas.width = Math.round(this.viewWidth * this.dpr);
+        this.canvas.height = Math.round(this.viewHeight * this.dpr);
+        this.canvas.style.width = `${this.viewWidth}px`;
+        this.canvas.style.height = `${this.viewHeight}px`;
+        this.camera.x = this.viewWidth / 2;
+        this.camera.y = this.viewHeight / 2;
         this.render();
     },
 
@@ -202,7 +218,7 @@ export const editor = {
     setOpen(open) {
         if (this.tool === 'select' && this.selectedShapes.length > 0) {
             this.selectedShapes.forEach(shape => shape.open = open);
-            project.isDirty = true;
+            project.markDirty();
             this.render();
         } else {
             this.open = open;
@@ -218,10 +234,14 @@ export const editor = {
         const loop = (time) => {
             if (this.isPlaying && time - this.lastDrawTime > (1000 / this.fps)) {
                 const act = project.getCurrentAction();
-                this.currentFrameIndex = (this.currentFrameIndex + 1) % act.frames.length;
+                const next = (this.currentFrameIndex + 1) % act.frames.length;
                 this.lastDrawTime = time;
-                project.refreshUI();
-                this.render();
+                // With one frame nothing changes, so don't rebuild the UI under the mouse.
+                if (next !== this.currentFrameIndex) {
+                    this.currentFrameIndex = next;
+                    refreshPlayback();
+                    this.render();
+                }
             }
             requestAnimationFrame(loop);
         };
@@ -232,6 +252,28 @@ export const editor = {
     worldToScreen(wx, wy) { return { x: (wx * this.camera.zoom) + this.camera.x, y: (wy * this.camera.zoom) + this.camera.y }; },
     snap(val) { return this.snapToGrid ? Math.round(val) : val; },
     clearOverlay() { this.overlayImage = null; this.render(); },
+
+    /** Overlay scale is shown on a log2 slider so tiny and huge images both fit the range. */
+    setOverlayScale(value) {
+        const scale = Number(value);
+        if (!(scale > 0)) return;
+        this.overlayScale = scale;
+        document.getElementById('overlay-scale').value = Math.log2(scale);
+        document.getElementById('overlay-scale-value').value = +scale.toFixed(3);
+        this.render();
+    },
+
+    setPreviewZoom(zoom) {
+        this.previewZoom = Math.min(16, Math.max(1, Math.round(zoom)));
+        document.getElementById('preview-zoom').textContent = `${this.previewZoom}x`;
+        this.render();
+    },
+
+    togglePreview() {
+        this.showPreview = !this.showPreview;
+        document.getElementById('preview').classList.toggle('collapsed', !this.showPreview);
+        this.render();
+    },
 };
 
 Object.assign(editor, renderMethods, transformMethods);
