@@ -5,6 +5,7 @@ import { project } from '../project.js';
 import { hexToRgb, normalizeHexColor, rgbToHex } from '../utils/color.js';
 import { renderMethods } from './render.js';
 import { transformMethods } from './transform.js';
+import { refreshPlayback } from '../ui/panels.js';
 
 export const editor = {
     canvas: null,
@@ -223,10 +224,14 @@ export const editor = {
         const loop = (time) => {
             if (this.isPlaying && time - this.lastDrawTime > (1000 / this.fps)) {
                 const act = project.getCurrentAction();
-                this.currentFrameIndex = (this.currentFrameIndex + 1) % act.frames.length;
+                const next = (this.currentFrameIndex + 1) % act.frames.length;
                 this.lastDrawTime = time;
-                project.refreshUI();
-                this.render();
+                // With one frame nothing changes, so don't rebuild the UI under the mouse.
+                if (next !== this.currentFrameIndex) {
+                    this.currentFrameIndex = next;
+                    refreshPlayback();
+                    this.render();
+                }
             }
             requestAnimationFrame(loop);
         };
