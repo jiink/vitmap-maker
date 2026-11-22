@@ -121,13 +121,19 @@ export const renderMethods = {
         // Dots are exactly one physical pixel, so draw them untransformed in device pixels.
         ctx.save();
         ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.beginPath(); ctx.fillStyle = "#808080";
-        for (let x = offsetX; x < canvas.width; x += spacing) {
-            for (let y = offsetY; y < canvas.height; y += spacing) {
-                ctx.rect(Math.round(x), Math.round(y), 1, 1);
+        // Each dot is a white pixel with a black pixel directly below it, so it stays
+        // visible on both light and dark backgrounds/shapes.
+        const dots = (color, dy) => {
+            ctx.beginPath(); ctx.fillStyle = color;
+            for (let x = offsetX; x < canvas.width; x += spacing) {
+                for (let y = offsetY; y < canvas.height; y += spacing) {
+                    ctx.rect(Math.round(x), Math.round(y) + dy, 1, 1);
+                }
             }
-        }
-        ctx.fill();
+            ctx.fill();
+        };
+        dots("#000000", 1);
+        dots("#ffffff", 0);
         ctx.restore();
         const origin = this.worldToScreen(0, 0);
         ctx.beginPath(); ctx.strokeStyle = "#444"; ctx.lineWidth = 2;
