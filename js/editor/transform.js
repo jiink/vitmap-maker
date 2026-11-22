@@ -36,7 +36,7 @@ export const transformMethods = {
             });
         });
 
-        project.isDirty = true;
+        project.markDirty();
         this.render();
     },
 
@@ -48,7 +48,7 @@ export const transformMethods = {
                 point.y = Math.round(point.y);
             });
         });
-        project.isDirty = true;
+        project.markDirty();
         this.render();
     },
 
@@ -69,7 +69,7 @@ export const transformMethods = {
         const nextIndex = frame.shapes.length - 1 - Math.min(nextListPosition, frame.shapes.length - 1);
         this.selectedShapes = frame.shapes.length > 0 ? [frame.shapes[nextIndex]] : [];
         this.selectedPointIndex = -1;
-        project.isDirty = true;
+        project.markDirty();
         this.syncPropertyInputs();
         this.render();
         project.refreshUI();
@@ -86,7 +86,7 @@ export const transformMethods = {
         const newIdx = idx + dir;
         if (newIdx >= 0 && newIdx < frame.shapes.length) {
             [frame.shapes[idx], frame.shapes[newIdx]] = [frame.shapes[newIdx], frame.shapes[idx]];
-            project.isDirty = true;
+            project.markDirty();
             this.render();
             project.refreshUI();
         }

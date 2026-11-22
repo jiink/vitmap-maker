@@ -16,9 +16,12 @@ export const renderMethods = {
         }
 
         this.drawFrame(project.getCurrentFrame(), 1.0);
-
         if (this.drawingShape) this.drawInProgressShape();
+
+        // Reference image goes above every shape; only the editing aids (grid,
+        // selection handles, cursor) are drawn over it so they stay usable.
         if (this.overlayImage) this.drawOverlay();
+        this.drawGrid();
 
         if (this.tool === 'select') {
             this.selectedShapes.forEach(shape => {
@@ -27,7 +30,27 @@ export const renderMethods = {
         }
 
         if (this.tool === 'draw' || this.isDragging) this.drawCursor();
-        this.drawGrid();
+        this.renderPreview();
+    },
+
+    /** The small read-only viewport: current frame at a fixed zoom, centered on the origin. */
+    renderPreview() {
+        const canvas = this.previewCanvas;
+        if (!canvas || !this.showPreview) return;
+        const previewCtx = canvas.getContext('2d');
+        previewCtx.fillStyle = this.backgroundColor;
+        previewCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Reuse the normal drawing code by pointing it at the preview's context and camera.
+        const saved = { ctx: this.ctx, camera: this.camera };
+        this.ctx = previewCtx;
+        this.camera = { x: canvas.width / 2, y: canvas.height / 2, zoom: this.previewZoom };
+        try {
+            this.drawFrame(project.getCurrentFrame(), 1.0);
+            if (this.drawingShape) this.drawPoly(this.drawingShape, 1.0, false);
+        } finally {
+            Object.assign(this, saved);
+        }
     },
 
     drawRefScale() {
@@ -110,7 +133,7 @@ export const renderMethods = {
     },
 
     drawFrame(frame, alphaMult) {
-        frame.shapes.forEach(shape => { this.drawPoly(shape, alphaMult, false); });
+        frame.shapes.forEach(shape => { if (!shape.hidden) this.drawPoly(shape, alphaMult, false); });
     },
 
     drawPoly(shape, alphaMult, isOutline) {

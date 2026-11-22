@@ -52,12 +52,24 @@ function renderLayerList() {
     [...currentFrame.shapes].reverse().forEach((shape, revIdx) => {
         const realIdx = currentFrame.shapes.length - 1 - revIdx;
         const isSelected = editor.selectedShapes.includes(shape);
-        const row = el('div', `layer-item ${isSelected ? 'selected' : ''}`);
+        const row = el('div', `layer-item ${isSelected ? 'selected' : ''} ${shape.hidden ? 'hidden-shape' : ''}`);
 
         const c = shape.color;
         const swatch = el('div', 'layer-color');
         swatch.style.background = `rgba(${c.r},${c.g},${c.b},${c.a / 255})`;
-        row.append(swatch, el('div', 'layer-name', `Shape ${realIdx} (${shape.points.length} pts)`), el('i', 'fas fa-eye'));
+        const eye = el('button', 'layer-eye');
+        eye.title = shape.hidden ? 'Show shape' : 'Hide shape';
+        eye.setAttribute('aria-label', eye.title);
+        eye.appendChild(el('i', shape.hidden ? 'fas fa-eye-slash' : 'fas fa-eye'));
+        eye.onclick = (e) => {
+            e.stopPropagation();
+            if (shape.hidden) delete shape.hidden;
+            else shape.hidden = true;
+            project.markDirty();
+            editor.render();
+            refreshUI();
+        };
+        row.append(swatch, el('div', 'layer-name', `Shape ${realIdx} (${shape.points.length} pts)`), eye);
 
         row.onclick = (e) => {
             editor.tool = 'select';

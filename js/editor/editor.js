@@ -22,6 +22,9 @@ export const editor = {
     overlayX: 0,
     overlayY: 0,
     backgroundColor: '#121212',
+    previewCanvas: null,
+    showPreview: true,
+    previewZoom: 2,
 
     currentFrameIndex: 0,
     fps: 12,
@@ -42,9 +45,11 @@ export const editor = {
     borderColor: { r: 255, g: 255, b: 255 },
     open: false,
 
-    init(canvas) {
+    init(canvas, previewCanvas) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
+        this.previewCanvas = previewCanvas;
+        this.setPreviewZoom(this.previewZoom);
         this.resize();
         window.addEventListener('resize', () => this.resize());
         this.startLoop();
@@ -202,7 +207,7 @@ export const editor = {
     setOpen(open) {
         if (this.tool === 'select' && this.selectedShapes.length > 0) {
             this.selectedShapes.forEach(shape => shape.open = open);
-            project.isDirty = true;
+            project.markDirty();
             this.render();
         } else {
             this.open = open;
@@ -232,6 +237,28 @@ export const editor = {
     worldToScreen(wx, wy) { return { x: (wx * this.camera.zoom) + this.camera.x, y: (wy * this.camera.zoom) + this.camera.y }; },
     snap(val) { return this.snapToGrid ? Math.round(val) : val; },
     clearOverlay() { this.overlayImage = null; this.render(); },
+
+    /** Overlay scale is shown on a log2 slider so tiny and huge images both fit the range. */
+    setOverlayScale(value) {
+        const scale = Number(value);
+        if (!(scale > 0)) return;
+        this.overlayScale = scale;
+        document.getElementById('overlay-scale').value = Math.log2(scale);
+        document.getElementById('overlay-scale-value').value = +scale.toFixed(3);
+        this.render();
+    },
+
+    setPreviewZoom(zoom) {
+        this.previewZoom = Math.min(16, Math.max(1, Math.round(zoom)));
+        document.getElementById('preview-zoom').textContent = `${this.previewZoom}x`;
+        this.render();
+    },
+
+    togglePreview() {
+        this.showPreview = !this.showPreview;
+        document.getElementById('preview').classList.toggle('collapsed', !this.showPreview);
+        this.render();
+    },
 };
 
 Object.assign(editor, renderMethods, transformMethods);
